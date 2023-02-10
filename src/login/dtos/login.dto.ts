@@ -1,4 +1,4 @@
-import { IsPhoneNumber, IsNumber } from 'class-validator';
+import { IsPhoneNumber, IsNumber, IsString } from 'class-validator';
 
 export class driverLoginDto {
   @IsPhoneNumber()
@@ -6,4 +6,12 @@ export class driverLoginDto {
 
   @IsNumber()
   otp: string;
+}
+
+export class adminLoginDto {
+  @IsString()
+  username: string;
+
+  @IsString()
+  password: string;
 }

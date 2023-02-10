@@ -5,6 +5,8 @@ import { Driver } from './driver/driver.entity';
 import { STATUS_FAILED, STATUS_SUCCESS } from './utils/codes';
 import { responseInterface } from './utils/interfaces/response';
 import { hashSync, genSaltSync } from 'bcrypt';
+import { roleEnums } from './utils/enums';
+import { verifyRoleAccess } from './utils/commonfunctions';
 @Injectable()
 export class AppService {
   constructor(
@@ -15,12 +17,23 @@ export class AppService {
     return 'Hello World!';
   }
 
-  async generateOtp(id: number): Promise<responseInterface> {
+  async generateOtp(id: number, role: string): Promise<responseInterface> {
     let statusCode = STATUS_SUCCESS,
       messages = [],
       data = [],
       digitisOfOtp = 1000000;
+
     try {
+      let isAllowed = verifyRoleAccess({
+        role,
+        allowedRoles: [roleEnums.admin],
+      });
+      if (isAllowed !== true) {
+        statusCode = isAllowed.statusCode;
+        messages.push(isAllowed.messages);
+        return;
+      }
+
       let otp = Math.floor(Math.random() * digitisOfOtp);
       const salt = genSaltSync();
       const encryptedOtp = hashSync(otp + '', salt);

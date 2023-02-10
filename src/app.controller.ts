@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param } from '@nestjs/common';
+import { Controller, Get, Post, Param, Body } from '@nestjs/common';
 import { AppService } from './app.service';
 import { responseInterface } from './utils/interfaces/response';
 
@@ -14,7 +14,8 @@ export class AppController {
   @Post('generate/otp/:id')
   async generateOtp(
     @Param() params: { id: number },
+    @Body() body: { role: string },
   ): Promise<responseInterface> {
-    return this.appService.generateOtp(params.id);
+    return await this.appService.generateOtp(params.id, body.role);
   }
 }

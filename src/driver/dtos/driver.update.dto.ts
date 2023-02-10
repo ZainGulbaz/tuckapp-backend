@@ -58,4 +58,7 @@ export class updateDriverDto {
   @IsOptional()
   @IsBoolean()
   registerationStatus: boolean;
+
+  @IsString()
+  role: string;
 }

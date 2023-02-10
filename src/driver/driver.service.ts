@@ -11,7 +11,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Driver } from './driver.entity';
 import { Repository } from 'typeorm';
 import { updateDriverDto } from './dtos/driver.update.dto';
-import { generateToken } from 'src/utils/commonfunctions';
+import { generateToken, verifyRoleAccess } from 'src/utils/commonfunctions';
 import { roleEnums } from 'src/utils/enums';
 
 @Injectable()
@@ -70,7 +70,7 @@ export class DriverService {
     }
   }
 
-  async getAllDrivers(): Promise<responseInterface> {
+  async getAllDrivers(role: string): Promise<responseInterface> {
     let statusCode = STATUS_SUCCESS,
       messages = [],
       data = [];
@@ -78,6 +78,16 @@ export class DriverService {
     Logger.log('DRIVER SERVICE is called');
 
     try {
+      let isAllowed = verifyRoleAccess({
+        role,
+        allowedRoles: [roleEnums.admin],
+      });
+      if (isAllowed !== true) {
+        statusCode = isAllowed.statusCode;
+        messages = isAllowed.messages;
+        return;
+      }
+
       let drivers = await this.driverRepository.find({});
       Logger.log(`The drivers are fetched successfully`);
       messages.push('The drivers are fetched successfully');
@@ -98,12 +108,22 @@ export class DriverService {
     }
   }
 
-  async getDriver(id: number): Promise<responseInterface> {
+  async getDriver(id: number, role: string): Promise<responseInterface> {
     let statusCode = STATUS_SUCCESS,
       data = [],
       messages = [];
 
     Logger.log('DRIVER SERVICE is called');
+
+    let isAllowed = verifyRoleAccess({
+      role,
+      allowedRoles: [roleEnums.admin, roleEnums.driver],
+    });
+    if (isAllowed !== true) {
+      statusCode = isAllowed.statusCode;
+      messages = isAllowed.messages;
+      return;
+    }
 
     try {
       const driver = await this.driverRepository.findOneBy({ id });
@@ -134,7 +154,7 @@ export class DriverService {
     }
   }
 
-  async deleteDriver(id: number): Promise<responseInterface> {
+  async deleteDriver(id: number, role: string): Promise<responseInterface> {
     let statusCode = STATUS_SUCCESS,
       messages = [],
       data = [];
@@ -142,6 +162,15 @@ export class DriverService {
     Logger.log('DRIVER SERVICE is called');
 
     try {
+      let isAllowed = verifyRoleAccess({
+        role,
+        allowedRoles: [roleEnums.admin],
+      });
+      if (isAllowed !== true) {
+        statusCode = isAllowed.statusCode;
+        messages = isAllowed.messages;
+        return;
+      }
       let res = await this.driverRepository.delete(id);
       if (res.affected > 0) {
         messages.push('The driver was successfully deleted');
@@ -174,6 +203,16 @@ export class DriverService {
     Logger.log('DRIVER SERVICE is called');
 
     try {
+      let isAllowed = verifyRoleAccess({
+        role: body?.role,
+        allowedRoles: [roleEnums.driver, roleEnums.admin],
+      });
+      if (isAllowed !== true) {
+        statusCode = isAllowed.statusCode;
+        messages = isAllowed.messages;
+        return;
+      }
+      delete body.role;
       let res = await this.driverRepository.update(id, body);
       if (res.affected == 1) {
         let updatedDriver = await this.driverRepository.findOneBy({ id });

@@ -18,13 +18,18 @@ export class AuthMiddleware implements NestMiddleware {
         let token: string = req.header('authorization')?.split(' ')[1] + '';
         let decoded: any = jwt.verify(token, process.env.JWT_SECRET + '');
 
-        const { role, phoneNumber, id } = decoded;
+        const { role, username, id } = decoded;
+        let user = { username: undefined };
 
         if (role == roleEnums.driver) {
-          var user: any = await this.loggerService.getDriver(id);
+          let res = await this.loggerService.getDriver(id);
+          user.username = res.phoneNumber;
+        } else if (role == roleEnums.admin) {
+          let res = await this.loggerService.getAdmin(id);
+          user.username = res.username;
         }
-
-        if (user.phoneNumber == phoneNumber) {
+        if (user.username == username) {
+          req.body.role = role;
           next();
         } else {
           res.json({
