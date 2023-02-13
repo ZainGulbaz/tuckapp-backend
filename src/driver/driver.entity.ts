@@ -21,7 +21,7 @@ export class Driver {
   country: string;
 
   @Column({ default: null })
-  driverPhoto: string;
+  truckPhoto: string;
 
   @Column({ nullable: false })
   lisencePhoto: string;

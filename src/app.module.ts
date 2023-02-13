@@ -19,7 +19,6 @@ import { DRIVER_ROUTE, ADMIN_ROUTE } from './utils/routes';
 import { DriverService } from './driver/driver.service';
 import { LoginModule } from './login/login.module';
 import { AdminModule } from './admin/admin.module';
-
 import 'dotenv/config';
 import { AdminController } from './admin/admin.controller';
 
@@ -52,6 +51,14 @@ export class AppModule implements NestModule {
         },
         {
           path: `${process.env.GLOBAL_PREFIX}/login/${DRIVER_ROUTE}`,
+          method: RequestMethod.POST,
+        },
+        {
+          path: `${process.env.GLOBAL_PREFIX}/${DRIVER_ROUTE}/photo/lisence`,
+          method: RequestMethod.POST,
+        },
+        {
+          path: `${process.env.GLOBAL_PREFIX}/${DRIVER_ROUTE}/photo/truck`,
           method: RequestMethod.POST,
         },
         {

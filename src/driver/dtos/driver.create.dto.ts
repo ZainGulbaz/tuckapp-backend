@@ -11,7 +11,7 @@ export class createDriverDto {
   phoneNumber: string;
 
   @IsString()
-  driverPhoto: string;
+  truckPhoto: string;
 
   @IsString()
   city: string;

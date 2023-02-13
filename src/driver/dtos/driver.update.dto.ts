@@ -21,7 +21,7 @@ export class updateDriverDto {
 
   @IsOptional()
   @IsString()
-  driverPhoto: string;
+  truckPhoto: string;
 
   @IsOptional()
   @IsString()
