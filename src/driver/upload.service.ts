@@ -27,7 +27,7 @@ export class UploadService {
     } catch (e) {
       return {
         statusCode: STATUS_FAILED,
-        message: 'The lisence photo was not uploaded',
+        message: 'The lisence photo was not uploadedd',
       };
     }
   }
