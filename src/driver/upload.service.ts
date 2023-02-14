@@ -22,7 +22,7 @@ export class UploadService {
       return {
         statusCode: STATUS_SUCCESS,
         message: 'The lisence photo was uploaded successfully',
-        truckPhoto: fileName,
+        lisencePhoto: fileName,
       };
     } catch (e) {
       return {
