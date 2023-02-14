@@ -19,7 +19,6 @@ import { DRIVER_ROUTE, ADMIN_ROUTE } from './utils/routes';
 import { DriverService } from './driver/driver.service';
 import { LoginModule } from './login/login.module';
 import { AdminModule } from './admin/admin.module';
-import 'dotenv/config';
 import { AdminController } from './admin/admin.controller';
 
 let databaseCredentials = JSON.parse(

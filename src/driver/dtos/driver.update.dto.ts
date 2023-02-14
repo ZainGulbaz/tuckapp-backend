@@ -1,10 +1,4 @@
-import {
-  IsString,
-  IsBoolean,
-  IsNumber,
-  IsPhoneNumber,
-  IsOptional,
-} from 'class-validator';
+import { IsString, IsBoolean, IsNumber, IsOptional } from 'class-validator';
 
 export class updateDriverDto {
   @IsOptional()
@@ -14,10 +8,6 @@ export class updateDriverDto {
   @IsOptional()
   @IsString()
   lastName: string;
-
-  @IsOptional()
-  @IsPhoneNumber()
-  phoneNumber: string;
 
   @IsOptional()
   @IsString()

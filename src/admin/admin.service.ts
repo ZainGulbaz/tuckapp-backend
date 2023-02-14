@@ -4,10 +4,8 @@ import { STATUS_FAILED, STATUS_SUCCESS } from 'src/utils/codes';
 import { Admin } from './admin.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { generateToken } from 'src/utils/commonfunctions';
 import { adminCreateDto } from './dtos/admin.create.dto';
 import { genSaltSync, hashSync } from 'bcrypt';
-import { roleEnums } from 'src/utils/enums';
 @Injectable()
 export class AdminService {
   constructor(
@@ -23,9 +21,9 @@ export class AdminService {
       let encryptedPassword = hashSync(body.password, salt);
       body.password = encryptedPassword;
       let res = await this.adminRepository.insert(body);
-      if (res.raw[0].id > 0) {
+      if (res.raw.insertId > 0) {
         delete body.password;
-        data.push({ ...body });
+        data.push({ ...body, id: res.raw.insertId });
         messages.push('The admin is created successfully');
       } else {
         messages.push('The admin cannot be created successfully');

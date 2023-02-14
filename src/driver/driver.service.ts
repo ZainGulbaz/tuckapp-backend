@@ -29,17 +29,17 @@ export class DriverService {
 
     try {
       let res = await this.driverRepository.insert(body);
-      if (res.raw[0].id > 0) {
+      if (res.raw.insertId > 0) {
         statusCode = STATUS_SUCCESS;
         let token = generateToken(
-          res.raw[0].id,
+          res.raw.insertId,
           roleEnums.driver,
           body.phoneNumber,
         );
 
         data = [{ ...body, token }];
         Logger.log(
-          `The request to register the driver is submitted successfully with id "${res.raw[0].id}"`,
+          `The request to register the driver is submitted successfully with id "${res.raw.insertId}"`,
         );
         messages.push(
           'The request to register the driver is submitted successfully',
