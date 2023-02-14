@@ -17,6 +17,7 @@ import { DriverService } from './driver.service';
 import { UploadService } from './upload.service';
 import { createDriverDto } from './dtos/driver.create.dto';
 import { updateDriverDto } from './dtos/driver.update.dto';
+import { STATUS_FAILED, STATUS_SUCCESS } from 'src/utils/codes';
 
 @Controller('driver')
 export class DriverController {
@@ -65,12 +66,11 @@ export class DriverController {
       limits: { fileSize: 5000000 },
       fileFilter: (req, file, callback) => {
         if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
-          return {
-            statusCode: 404,
-            messages: 'The image format is not supported',
-          };
-        }
-        callback(null, true);
+          req.body.fileName = '';
+          req.body.message = 'Unsupported image format';
+          req.body.statusCode = STATUS_FAILED;
+          callback(null, false);
+        } else callback(null, true);
       },
       storage: diskStorage({
         destination: './client/uploads/driver/truck/',
@@ -79,14 +79,18 @@ export class DriverController {
           const filename = `${uuidv4()}${originalname.slice(
             originalname.lastIndexOf('.'),
           )}`;
-          callback(null, filename);
           req.body.fileName = filename;
+          req.body.message = 'The Truck image is uploaded successfully';
+          req.body.statusCode = STATUS_SUCCESS;
+          callback(null, filename);
         },
       }),
     }),
   )
-  handleTruckPhotoUpload(@Body() body: { fileName: string }) {
-    return this.uploadService.handleTruckPhotoUpload(body.fileName);
+  handleTruckPhotoUpload(
+    @Body() body: { fileName?: string; message: string; statusCode: number },
+  ) {
+    return this.uploadService.handleTruckPhotoUpload(body);
   }
 
   @Post('photo/lisence')
@@ -95,12 +99,11 @@ export class DriverController {
       limits: { fileSize: 5000000 },
       fileFilter: (req, file, callback) => {
         if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
-          return {
-            statusCode: 404,
-            messages: 'The image format is not supported',
-          };
-        }
-        callback(null, true);
+          req.body.fileName = '';
+          req.body.message = 'Unsupported image format';
+          req.body.statusCode = STATUS_FAILED;
+          callback(null, false);
+        } else callback(null, true);
       },
       storage: diskStorage({
         destination: './client/uploads/driver/lisence/',
@@ -109,13 +112,17 @@ export class DriverController {
           const filename = `${uuidv4()}${originalname.slice(
             originalname.lastIndexOf('.'),
           )}`;
-          callback(null, filename);
           req.body.fileName = filename;
+          req.body.message = 'The lisence image is uploaded successfully';
+          req.body.statusCode = STATUS_SUCCESS;
+          callback(null, filename);
         },
       }),
     }),
   )
-  handleLisencePhotoUpload(@Body() body: { fileName: string }) {
-    return this.uploadService.handleLisencePhotoUpload(body.fileName);
+  handleLisencePhotoUpload(
+    @Body() body: { fileName?: string; message: string; statusCode: number },
+  ) {
+    return this.uploadService.handleLisencePhotoUpload(body);
   }
 }

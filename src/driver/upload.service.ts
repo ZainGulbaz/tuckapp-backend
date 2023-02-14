@@ -2,32 +2,52 @@ import { Injectable } from '@nestjs/common';
 import { STATUS_SUCCESS, STATUS_FAILED } from 'src/utils/codes';
 @Injectable()
 export class UploadService {
-  handleTruckPhotoUpload(fileName: string) {
+  handleTruckPhotoUpload(body: {
+    fileName?: string;
+    message: string;
+    statusCode: number;
+  }) {
+    const { fileName, message, statusCode } = body;
+    let messages = [];
     try {
+      if (statusCode !== STATUS_SUCCESS) {
+        throw new Error(message);
+      } else messages.push(message);
       return {
-        statusCode: STATUS_SUCCESS,
-        message: 'The truck photo was uploaded successfully',
-        truckPhoto: fileName,
+        statusCode,
+        messages,
+        lisencePhoto: fileName,
       };
     } catch (e) {
+      messages.push('The lisence photo was not uploaded', e.message);
       return {
-        statusCode: STATUS_FAILED,
-        message: 'The truck photo was not uploaded',
+        statusCode,
+        messages,
       };
     }
   }
 
-  handleLisencePhotoUpload(fileName: string) {
+  handleLisencePhotoUpload(body: {
+    fileName?: string;
+    message: string;
+    statusCode: number;
+  }) {
+    const { fileName, message, statusCode } = body;
+    let messages = [];
     try {
+      if (statusCode !== STATUS_SUCCESS) {
+        throw new Error(message);
+      } else messages.push(message);
       return {
-        statusCode: STATUS_SUCCESS,
-        message: 'The lisence photo was uploaded successfully',
+        statusCode,
+        messages,
         lisencePhoto: fileName,
       };
     } catch (e) {
+      messages.push('The lisence photo was not uploaded', e.message);
       return {
-        statusCode: STATUS_FAILED,
-        message: 'The lisence photo was not uploadedd',
+        statusCode,
+        messages,
       };
     }
   }
