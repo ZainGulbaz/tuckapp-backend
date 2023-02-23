@@ -14,7 +14,7 @@ export class AppService {
   ) {}
 
   getHello(): string {
-    return 'Hello World!';
+    return 'Hello World';
   }
 
   async generateOtp(id: number, role: string): Promise<responseInterface> {

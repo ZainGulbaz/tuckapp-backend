@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Driver } from './driver/driver.entity';
 import { Admin } from './admin/admin.entity';
+import { Customer } from './customer/customer.entity';
 @Injectable()
 export class LoggerService {
   constructor(
@@ -10,6 +11,8 @@ export class LoggerService {
     private driverRepository: Repository<Driver>,
     @InjectRepository(Admin)
     private adminRepository: Repository<Admin>,
+    @InjectRepository(Customer)
+    private customerRepository: Repository<Customer>,
   ) {}
 
   async getDriver(id: number) {
@@ -19,6 +22,11 @@ export class LoggerService {
 
   async getAdmin(id: number) {
     let user = await this.adminRepository.findOne({ where: [{ id: id }] });
+    return user;
+  }
+
+  async getCustomer(id: number) {
+    let user = await this.customerRepository.findOne({ where: [{ id: id }] });
     return user;
   }
 }

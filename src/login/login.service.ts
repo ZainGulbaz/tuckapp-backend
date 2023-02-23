@@ -1,7 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { driverLoginDto, adminLoginDto } from './dtos/login.dto';
+import {
+  driverLoginDto,
+  adminLoginDto,
+  customerLoginDto,
+} from './dtos/login.dto';
 import { Driver } from 'src/driver/driver.entity';
 import { Admin } from 'src/admin/admin.entity';
+import { Customer } from 'src/customer/customer.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
@@ -20,6 +25,8 @@ export class LoginService {
   constructor(
     @InjectRepository(Driver) private driverRepository: Repository<Driver>,
     @InjectRepository(Admin) private adminRepository: Repository<Admin>,
+    @InjectRepository(Customer)
+    private customerRepository: Repository<Customer>,
   ) {}
 
   async driverLogin(body: driverLoginDto) {
@@ -89,6 +96,38 @@ export class LoginService {
         messages,
         data,
         statusCode,
+      };
+    }
+  }
+
+  async customerLogin(body: customerLoginDto) {
+    const { email, otp } = body;
+    let statusCode = STATUS_SUCCESS,
+      messages = [],
+      data = [];
+    try {
+      let response = await this.customerRepository.findOne({
+        where: [{ email }, { otp }],
+      });
+      if (response) {
+        let token = generateToken(response.id, roleEnums.customer, email);
+        delete response.otp;
+        data.push({ ...response, token });
+        messages.push('The login was successful');
+        statusCode = STATUS_SUCCESS;
+      } else {
+        throw new Error('The otp is incorrect');
+      }
+    } catch (err) {
+      console.log(err);
+      messages.push('The login was not successful');
+      messages.push(err.message);
+      statusCode = STATUS_FAILED;
+    } finally {
+      return {
+        messages,
+        statusCode,
+        data,
       };
     }
   }

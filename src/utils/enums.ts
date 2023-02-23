@@ -3,3 +3,5 @@ export const roleEnums = Object.freeze({
   driver: 'DRIVER',
   customer: 'CUSTOMER',
 });
+
+export const waitingMinutes = 5;

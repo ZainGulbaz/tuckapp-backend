@@ -36,7 +36,7 @@ export function verifyRoleAccess(data: {
       }
     } else {
       responseObj.statusCode = STATUS_FAILED;
-      responseObj.messages.push('We are unable to server this request');
+      responseObj.messages.push('We are unable to serve this request');
       responseObj.data = [];
     }
   } catch (err) {
@@ -48,4 +48,12 @@ export function verifyRoleAccess(data: {
   } finally {
     return responseObj;
   }
+}
+
+export function removeKeysFromBody(keys: string[], body: object) {
+  keys?.map((key) => delete body[key]);
+}
+
+export function generateRandomOtp() {
+  return Math.floor(Math.random() * 1000000);
 }

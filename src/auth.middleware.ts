@@ -9,6 +9,21 @@ import { roleEnums } from './utils/enums';
 export class AuthMiddleware implements NestMiddleware {
   constructor(private readonly loggerService: LoggerService) {}
 
+  roleFunctionMapping = {
+    [roleEnums.driver]: async (id: number) => {
+      let res = await this.loggerService.getDriver(id);
+      return res.phoneNumber;
+    },
+    [roleEnums.admin]: async (id: number) => {
+      let res = await this.loggerService.getAdmin(id);
+      return res.username;
+    },
+    [roleEnums.customer]: async (id: number) => {
+      let res = await this.loggerService.getCustomer(id);
+      return res.phoneNumber;
+    },
+  };
+
   async use(req: Request, res: Response, next: NextFunction) {
     try {
       if (
@@ -19,17 +34,11 @@ export class AuthMiddleware implements NestMiddleware {
         let decoded: any = jwt.verify(token, process.env.JWT_SECRET + '');
         const { role, username, id } = decoded;
         let user = { username: undefined };
+        user.username = await this.roleFunctionMapping[role](id);
 
-        if (role == roleEnums.driver) {
-          let res = await this.loggerService.getDriver(id);
-          user.username = res.phoneNumber;
-          console.log(decoded, res);
-        } else if (role == roleEnums.admin) {
-          let res = await this.loggerService.getAdmin(id);
-          user.username = res.username;
-        }
-        if (user.username == username) {
+        if (user.username == username && username !== undefined) {
           req.body.role = role;
+          req.body.authId = id;
           next();
         } else {
           res.json({

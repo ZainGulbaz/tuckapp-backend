@@ -46,4 +46,10 @@ export class Driver {
 
   @Column({ default: null })
   otp: string;
+
+  @Column({ nullable: true })
+  currentCoordinates: string;
+
+  @Column({ default: false })
+  isActive: boolean;
 }
