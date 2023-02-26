@@ -57,3 +57,14 @@ export function removeKeysFromBody(keys: string[], body: object) {
 export function generateRandomOtp() {
   return Math.floor(Math.random() * 1000000);
 }
+
+export function checkKeys(keys: string[], obj: any): boolean {
+  let objKeys = Object.keys(obj);
+  if (keys.length !== objKeys.length) return true;
+  for (let i = 0; i < objKeys.length; i++) {
+    if (!keys.includes(objKeys[i])) {
+      return true;
+    }
+  }
+  return false;
+}

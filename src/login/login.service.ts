@@ -36,7 +36,7 @@ export class LoginService {
       data = [];
     try {
       let response = await this.driverRepository.findOne({
-        where: [{ phoneNumber }, { otp }],
+        where: [{ phoneNumber,otp }],
       });
       if (response) {
         let token = generateToken(response.id, roleEnums.driver, phoneNumber);
@@ -107,7 +107,7 @@ export class LoginService {
       data = [];
     try {
       let response = await this.customerRepository.findOne({
-        where: [{ email }, { otp }],
+        where: [{ email,otp  }],
       });
       if (response) {
         let token = generateToken(response.id, roleEnums.customer, email);

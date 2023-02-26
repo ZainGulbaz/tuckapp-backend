@@ -210,6 +210,7 @@ export class CustomerService {
         return;
       }
       delete body.role;
+      delete body.authId;
       let res = await this.customerRepository.update(id, body);
       if (res.affected == 1) {
         let updatedcustomer = await this.customerRepository.findOneBy({ id });

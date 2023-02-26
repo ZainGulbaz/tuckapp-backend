@@ -50,10 +50,11 @@ export class CustomerController {
   }
 
   @Put(':id')
-  async updateDriver(
+  async updateCustomer(
     @Param() params: { id: number },
     @Body() body: UpdateCustomerDto,
   ) {
+    console.log(body);
     return await this.customerService.updateCustomer(params.id, body);
   }
 

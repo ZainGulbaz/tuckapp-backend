@@ -24,6 +24,29 @@ export class AuthMiddleware implements NestMiddleware {
     },
   };
 
+  checkDriverCredentials = async (res: Response, id: number) => {
+    try {
+      let isDriverValidated = await this.loggerService.validateDriver(id);
+      if (isDriverValidated !== true) {
+        res.json({
+          messages: [isDriverValidated],
+          statusCode: STATUS_UNAUTHORIZED,
+          data: [],
+        });
+        return true;
+      }
+      return false;
+    } catch (err) {
+      throw new Error('Error in checking driver credentials');
+    }
+  };
+
+  credentialsFunctionMapping = {
+    [roleEnums.driver]: this.checkDriverCredentials,
+    [roleEnums.customer]: (res: Response, id: number) => false,
+    [roleEnums.admin]: (res: Response, id: number) => false,
+  };
+
   async use(req: Request, res: Response, next: NextFunction) {
     try {
       if (
@@ -35,6 +58,10 @@ export class AuthMiddleware implements NestMiddleware {
         const { role, username, id } = decoded;
         let user = { username: undefined };
         user.username = await this.roleFunctionMapping[role](id);
+
+        if (await this.credentialsFunctionMapping[role](res, id)) {
+          return;
+        }
 
         if (user.username == username && username !== undefined) {
           req.body.role = role;

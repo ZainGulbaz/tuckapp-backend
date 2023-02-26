@@ -1,7 +1,7 @@
 import { IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreateTransactionDto {
-  @IsNumber()
+  @IsNumber({})
   time: number;
 
   @IsNumber()
@@ -13,17 +13,13 @@ export class CreateTransactionDto {
 
   @IsOptional()
   @IsNumber()
-  driverId: number;
-
-  @IsOptional()
-  @IsNumber()
   customerId: number;
-
-  @IsOptional()
-  @IsNumber()
-  adminId: number;
 
   @IsOptional()
   @IsString()
   role: string;
+
+  @IsOptional()
+  @IsNumber()
+  authId: number;
 }

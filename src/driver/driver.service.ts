@@ -213,6 +213,7 @@ export class DriverService {
         return;
       }
       delete body.role;
+      delete body.authId;
       let res = await this.driverRepository.update(id, body);
       if (res.affected == 1) {
         let updatedDriver = await this.driverRepository.findOneBy({ id });

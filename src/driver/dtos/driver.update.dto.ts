@@ -51,4 +51,7 @@ export class updateDriverDto {
 
   @IsString()
   role: string;
+
+  @IsNumber()
+  authId: number;
 }

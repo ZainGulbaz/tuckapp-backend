@@ -52,4 +52,7 @@ export class Driver {
 
   @Column({ default: false })
   isActive: boolean;
+
+  @Column({ default: false, type: 'bigint' })
+  expiryDate: number;
 }

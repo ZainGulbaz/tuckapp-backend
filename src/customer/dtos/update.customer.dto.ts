@@ -1,4 +1,4 @@
-import { IsOptional, IsString } from 'class-validator';
+import { IsOptional, IsString ,IsNumber} from 'class-validator';
 
 export class UpdateCustomerDto {
   @IsOptional()
@@ -24,4 +24,8 @@ export class UpdateCustomerDto {
   @IsOptional()
   @IsString()
   role: string;
+
+  @IsOptional()
+  @IsNumber()
+  authId:number;
 }
