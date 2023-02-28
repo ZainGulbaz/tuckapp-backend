@@ -53,6 +53,6 @@ export class Driver {
   @Column({ default: false })
   isActive: boolean;
 
-  @Column({ default: false, type: 'bigint' })
+  @Column({ default: new Date().getTime(), type: 'bigint' })
   expiryDate: number;
 }

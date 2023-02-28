@@ -5,8 +5,6 @@ import { ValidationPipe } from '@nestjs/common';
 
 import { join } from 'path';
 
-console.log(process.env.GLOBAL_PREFIX);
-
 async function main() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     logger: ['error', 'warn', 'log'],

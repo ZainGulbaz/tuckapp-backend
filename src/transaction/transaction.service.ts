@@ -43,7 +43,6 @@ export class TransactionService {
         )
           throw new Error('Incorrect Parameters');
       } else if (body.role == roleEnums.driver) {
-        
         transactionObj.driverId = body.authId;
         removeKeysFromBody(['role', 'authId'], transactionObj);
         if (
@@ -127,7 +126,7 @@ export class TransactionService {
       }
 
       let transactions = await this.transactionRepository.query(
-        'SELECT tx.id id,cu.id customerId,tx.rideId rideId,dr.id driverId ,tx.amount amount, tx.time time,cu.firstName customerFirstName, cu.lastName customerLastName, cu.phoneNumber customerPhoneNumber,dr.phoneNumber driverPhoneNumber,dr.firstName driverFirstName, dr.lastName driverLastName  FROM transaction tx JOIN Customer cu ON cu.id=tx.customerId JOIN Driver dr ON dr.id=tx.driverId ORDER BY tx.time desc ',
+        'SELECT tx.id id,cu.id customerId,tx.rideId rideId,dr.id driverId ,tx.amount amount, tx.time time,cu.firstName customerFirstName, cu.lastName customerLastName, cu.phoneNumber customerPhoneNumber,dr.phoneNumber driverPhoneNumber,dr.firstName driverFirstName, dr.lastName driverLastName  FROM transaction tx JOIN customer cu ON cu.id=tx.customerId JOIN driver dr ON dr.id=tx.driverId ORDER BY tx.time desc',
       );
 
       messages.push('The Driver Transactions are successfully fetched');
