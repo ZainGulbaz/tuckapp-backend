@@ -1,4 +1,4 @@
-import { IsString, IsBoolean, IsNumber, IsPhoneNumber } from 'class-validator';
+import { IsString, IsOptional, IsNumber, IsPhoneNumber } from 'class-validator';
 
 export class createDriverDto {
   @IsString()
@@ -10,6 +10,7 @@ export class createDriverDto {
   @IsPhoneNumber()
   phoneNumber: string;
 
+  @IsOptional()
   @IsString()
   truckPhoto: string;
 
@@ -34,6 +35,7 @@ export class createDriverDto {
   @IsNumber()
   truckBedLength: number;
 
+  @IsOptional()
   @IsNumber()
   chargePerKm: number;
 }
