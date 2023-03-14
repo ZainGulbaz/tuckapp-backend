@@ -36,9 +36,11 @@ export class LoginService {
       data = [];
     try {
       let response = await this.driverRepository.findOne({
-        where: [{ phoneNumber,otp }],
+        where: [{ phoneNumber }],
       });
       if (response) {
+        if (!compareSync(otp + '', response.otp + ''))
+          throw new Error('Wrong otp provided');
         let token = generateToken(response.id, roleEnums.driver, phoneNumber);
         delete response.otp;
         data.push({ ...response, token });
@@ -107,7 +109,7 @@ export class LoginService {
       data = [];
     try {
       let response = await this.customerRepository.findOne({
-        where: [{ email,otp  }],
+        where: [{ email, otp }],
       });
       if (response) {
         let token = generateToken(response.id, roleEnums.customer, email);
