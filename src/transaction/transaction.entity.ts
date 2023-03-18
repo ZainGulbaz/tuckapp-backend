@@ -14,7 +14,7 @@ export class Transaction {
   @Column({ nullable: true })
   rideId: number;
 
-  @Column({ nullable: false })
+  @Column({ nullable: true })
   driverId: number;
 
   @Column({ nullable: true })

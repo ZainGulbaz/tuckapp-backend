@@ -7,8 +7,8 @@ export class CreateRideDto {
   @IsString()
   endLocation: string;
 
-  @IsNumber()
-  startTime: number;
+  @IsString()
+  city: string;
 
   @IsOptional()
   @IsString()
@@ -17,4 +17,7 @@ export class CreateRideDto {
   @IsOptional()
   @IsNumber()
   authId: number;
+
+  @IsNumber()
+  amount: number;
 }

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { Transaction } from './transaction.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -11,22 +11,26 @@ import {
 import { checkKeys } from 'src/utils/commonfunctions';
 import { CreateTransactionDto } from './dtos/create.transaction.dto';
 import { roleEnums } from 'src/utils/enums';
+import { TransactionHelperService } from './transaction.helper.service';
 @Injectable()
 export class TransactionService {
   constructor(
     @InjectRepository(Transaction)
     private transactionRepository: Repository<Transaction>,
+    @Inject(TransactionHelperService)
+    private transactionHelperService: TransactionHelperService,
   ) {}
   async createTransaction(
     body: CreateTransactionDto,
   ): Promise<responseInterface> {
     let messages = [],
       statusCode = STATUS_SUCCESS,
-      data = [];
+      data = [],
+      role = '';
     try {
       let isAllowed = verifyRoleAccess({
         role: body.role,
-        allowedRoles: [roleEnums.admin, roleEnums.driver],
+        allowedRoles: [roleEnums.admin],
       });
       if (isAllowed !== true) {
         statusCode = isAllowed.statusCode;
@@ -34,34 +38,23 @@ export class TransactionService {
         return;
       }
 
-      let transactionObj: any = body;
-      if (body.role == roleEnums.admin) {
-        transactionObj.adminId = body.authId;
-        removeKeysFromBody(['role', 'authId'], transactionObj);
-        if (
-          checkKeys(['adminId', 'time', 'amount', 'driverId'], transactionObj)
-        )
-          throw new Error('Incorrect Parameters');
-      } else if (body.role == roleEnums.driver) {
-        transactionObj.driverId = body.authId;
-        removeKeysFromBody(['role', 'authId'], transactionObj);
-        if (
-          checkKeys(
-            ['customerId', 'time', 'amount', 'driverId', 'rideId'],
-            transactionObj,
-          )
-        )
-          throw new Error('Incorrect Parameters');
-      }
-
-      let transaction = await this.transactionRepository.insert(transactionObj);
+      let refinedBody={driverId:body.driverId,time:new Date().getTime(),adminId:body.authId,amount:body.amount};
+      let transaction = await this.transactionRepository.insert(refinedBody);
       if (transaction.raw.affectedRows > 0) {
+        if (role == roleEnums.admin) {
+          await this.transactionHelperService.updateDriverExpiry({
+            id: body.driverId,
+            driverExpiry: body.driverExpiry,
+          });
+        }
         messages.push('The transaction was successfull');
         statusCode = STATUS_SUCCESS;
+        data.push({ transactionId: transaction.identifiers[0].id });
       } else {
         throw new Error('Unable to create transaction');
       }
     } catch (err) {
+      console.error(err);
       messages.push('The transaction was not created successfully');
       messages.push(err.message);
       statusCode = STATUS_FAILED;

@@ -55,4 +55,7 @@ export class Driver {
 
   @Column({ default: new Date().getTime(), type: 'bigint' })
   expiryDate: number;
+
+  @Column({ type: 'varchar' })
+  oneSignalToken: string;
 }

@@ -3,8 +3,9 @@ import { IsNumber, IsOptional, IsString } from 'class-validator';
 export class UpdateRideDto {
   @IsNumber()
   endTime: number;
-  @IsNumber()
-  transactionId: number;
+
+  @IsString()
+  transactionId: string;
 
   @IsOptional()
   @IsNumber()

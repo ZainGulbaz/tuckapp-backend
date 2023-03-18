@@ -1,4 +1,5 @@
 import { Controller, Post, Body, Put, Query, Param, Get } from '@nestjs/common';
+import { responseInterface } from 'src/utils/interfaces/response';
 import { AllRidesDto } from './dtos/all.rides.dtos';
 import { CreateRideDto } from './dtos/create.ride.dto';
 import { RideService } from './ride.service';
@@ -28,5 +29,10 @@ export class RideController {
     @Body() body: { authId: number,role:string },
   ) {
     return await this.rideService.assignRide(param.id, body.authId,body.role);
+  }
+
+  @Get("all")
+  async getAllRides(@Body() body:{role:string}): Promise<responseInterface>{
+    return await this.rideService.getAllRides(body.role);
   }
 }

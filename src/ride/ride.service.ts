@@ -1,4 +1,4 @@
-import { Injectable, Body } from '@nestjs/common';
+import { Injectable, Body, Inject } from '@nestjs/common';
 import { CreateRideDto } from './dtos/create.ride.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -16,10 +16,17 @@ import {
 import { roleEnums, waitingMinutes } from 'src/utils/enums';
 import { UpdateRideDto } from './dtos/update.ride.dto';
 import { AllRidesDto } from './dtos/all.rides.dtos';
+import { PushNotifyService } from './pushnotify.service';
+import { RideHelperService } from './ride.helper.service';
+
 @Injectable()
 export class RideService {
   constructor(
     @InjectRepository(Ride) private rideRepository: Repository<Ride>,
+    @Inject(PushNotifyService)
+    private readonly pushNotifyService: PushNotifyService,
+    @Inject(RideHelperService)
+    private readonly rideHelperService: RideHelperService,
   ) {}
 
   async createRide(@Body() body: CreateRideDto): Promise<responseInterface> {
@@ -40,13 +47,33 @@ export class RideService {
       const customerId = body.authId;
       delete body.authId;
 
-      let ride = await this.rideRepository.insert({ ...body, customerId });
+      let ride = await this.rideRepository.insert({
+        ...body,
+        customerId,
+        startTime: new Date().getTime(),
+      });
       if (ride.raw.insertId > 0) {
+        let rideTransactionId =
+          await this.rideHelperService.createRideTransaction({
+            customerId,
+            amount: body.amount,
+            rideId: ride.raw.insertId,
+          });
+        if (rideTransactionId) {
+          messages[1] = 'The transaction has already been created successfully';
+        } else {
+          await this.rideRepository.delete(ride.raw.insertId);
+          throw new Error('Unable to register the transaction for the ride');
+        }
         let createdRide = await this.rideRepository.findOne({
           where: [{ id: ride.raw.insertId }],
         });
         data.push(createdRide);
-        messages.push('The ride has been started successfully');
+        await this.pushNotifyService.notifyDriversForRide(
+          body.startLocation,
+          body.amount,
+        );
+        messages[0] = 'The ride has been started successfully';
         statusCode = STATUS_SUCCESS;
         return;
       } else {
@@ -69,13 +96,14 @@ export class RideService {
     id: number,
     body: UpdateRideDto,
   ): Promise<responseInterface> {
+    console.log(body.role);
     let messages = [],
       statusCode = STATUS_SUCCESS,
       data = [];
     try {
       let isAllowed = verifyRoleAccess({
         role: body.role,
-        allowedRoles: [roleEnums.customer],
+        allowedRoles: [roleEnums.driver],
       });
       if (isAllowed !== true) {
         statusCode = isAllowed.statusCode;
@@ -83,21 +111,37 @@ export class RideService {
         return;
       }
 
-      let ride = await this.rideRepository.findOneBy({ id });
+      let ride: Ride = await this.rideRepository.findOneBy({ id });
+      let rideTransactionId = '';
       if (ride == null) throw new Error('No ride is present with id ' + id);
+      else {
+        rideTransactionId = await this.rideHelperService.createRideTransaction({
+          customerId: ride.customerId,
+          amount: ride.amount,
+          rideId: ride.id,
+        });
+        if (rideTransactionId) {
+          messages[1] = 'The transaction has already been created successfully';
+        } else {
+          throw new Error('Unable to register the transaction for the ride');
+        }
+      }
 
-      if (body.authId !== ride.customerId)
+      if (body.authId !== ride.driverId)
         throw new Error('You are not authorized for this ride');
       if (ride.endTime) throw new Error('Ride is already completed');
 
       removeKeysFromBody(['role', 'authId'], body);
-      let updatedRide = await this.rideRepository.update(id, body);
+      let updatedRide = await this.rideRepository.update(id, {
+        ...body,
+        transactionId: rideTransactionId,
+      });
       if (updatedRide.affected == 1) {
         ride.endTime = body.endTime;
         ride.transactionId = body.transactionId;
         messages.push('The ride has been completed succesfully');
         statusCode = STATUS_SUCCESS;
-        data = [ride];
+        data = [{ ...ride, transactionId: rideTransactionId }];
         return;
       } else {
         messages.push('The ride was not completed succesfully');
@@ -207,6 +251,41 @@ export class RideService {
     } catch (err) {
       statusCode = STATUS_FAILED;
       messages.push('The ride cannot be assigned successfully');
+    } finally {
+      return {
+        statusCode,
+        messages,
+        data,
+      };
+    }
+  }
+
+  async getAllRides(role: string): Promise<responseInterface> {
+    let statusCode = STATUS_SUCCESS,
+      messages = [],
+      data = [];
+    try {
+      let isAllowed = verifyRoleAccess({
+        role,
+        allowedRoles: [roleEnums.admin],
+      });
+      if (isAllowed !== true) {
+        statusCode = isAllowed.statusCode;
+        messages = isAllowed.messages;
+        return;
+      }
+
+      let rides = await this.rideRepository.query(
+        'SELECT r.id,CONCAT(cu.firstName," ",cu.lastName)customerName,CONCAT(dr.firstName,"",dr.lastName)driverName,cu.phoneNumber customerPhoneNumber, dr.phoneNumber driverPhoneNumber, r.city city ,startTime,endTime,tx.amount FROM ride r JOIN driver dr ON r.driverId = dr.id JOIN customer cu ON r.customerId = cu.id join transaction tx ON r.transactionId = tx.id',
+      );
+      data = rides;
+      messages.push('The rides are fetched successfully');
+      statusCode = STATUS_SUCCESS;
+    } catch (err) {
+      console.log(err);
+      messages.push('The rides are not fetched');
+      messages.push(err.message);
+      statusCode = STATUS_FAILED;
     } finally {
       return {
         statusCode,

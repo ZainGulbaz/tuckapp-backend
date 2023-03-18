@@ -24,6 +24,12 @@ export class Ride {
   @Column({ nullable: true, type: 'bigint' })
   endTime: number;
 
-  @Column({ nullable: true, unique: true })
-  transactionId: number;
+  @Column({ nullable: true, unique: true, type: 'longtext' })
+  transactionId: string;
+
+  @Column({ nullable: false })
+  amount: number;
+
+  @Column()
+  city: string;
 }
