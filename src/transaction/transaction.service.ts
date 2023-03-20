@@ -38,7 +38,13 @@ export class TransactionService {
         return;
       }
 
-      let refinedBody={driverId:body.driverId,time:new Date().getTime(),adminId:body.authId,amount:body.amount};
+      let refinedBody = {
+        driverId: body.driverId,
+        time: new Date().getTime(),
+        adminId: body.authId,
+        amount: body.amount,
+        expiryDate: body.driverExpiry,
+      };
       let transaction = await this.transactionRepository.insert(refinedBody);
       if (transaction.raw.affectedRows > 0) {
         if (role == roleEnums.admin) {
@@ -83,7 +89,7 @@ export class TransactionService {
       }
 
       let transactions = await this.transactionRepository.query(
-        'SELECT tx.id id,dr.id driverId,tx.amount amount, tx.time time,dr.firstName firstName, dr.lastName lastName, dr.phoneNumber phoneNumber, dr.city city, dr.country country FROM transaction tx JOIN driver dr ON dr.id=tx.driverId ORDER BY tx.time desc ',
+        'SELECT tx.id id,dr.id driverId,tx.amount amount, tx.time time,dr.firstName firstName, dr.lastName lastName, dr.phoneNumber phoneNumber, dr.city city, dr.country country, tx.expiryDate FROM transaction tx JOIN driver dr ON dr.id=tx.driverId ORDER BY tx.time desc ',
       );
 
       messages.push('The Admin Transactions are successfully fetched');

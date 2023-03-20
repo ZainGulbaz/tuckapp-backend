@@ -1,7 +1,6 @@
 import { IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreateTransactionDto {
-
   @IsNumber()
   amount: number;
 
@@ -9,7 +8,6 @@ export class CreateTransactionDto {
   @IsString()
   role: string;
 
-  @IsOptional()
   @IsNumber()
   driverExpiry: number;
 

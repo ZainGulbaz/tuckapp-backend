@@ -22,4 +22,7 @@ export class Transaction {
 
   @Column({ nullable: true })
   adminId: number;
+
+  @Column({ nullable: true, type: 'bigint' })
+  expiryDate: number;
 }
