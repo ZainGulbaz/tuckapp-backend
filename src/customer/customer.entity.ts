@@ -38,4 +38,7 @@ export class Customer {
 
   @Column({ nullable: true })
   profilePhoto: string;
+
+  @Column({ type: 'varchar' })
+  oneSignalToken: string;
 }

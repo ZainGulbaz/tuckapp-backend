@@ -17,6 +17,7 @@ import { Admin } from './admin/admin.entity';
 import { Ride } from './ride/ride.entity';
 import { Customer } from './customer/customer.entity';
 import { Transaction } from './transaction/transaction.entity';
+import { Offer } from './offer/offer.entity';
 import { AuthMiddleware } from './auth.middleware';
 import { LoggerService } from './auth.service';
 import { DataSource } from 'typeorm';
@@ -27,8 +28,12 @@ import { AdminModule } from './admin/admin.module';
 import { AdminController } from './admin/admin.controller';
 import { CustomerModule } from './customer/customer.module';
 import { CustomerController } from './customer/customer.controller';
+import { OfferController } from './offer/offer.controller';
 import { RideModule } from './ride/ride.module';
 import { TransactionModule } from './transaction/transaction.module';
+import { OfferModule } from './offer/offer.module';
+
+
 
 let databaseCredentials = JSON.parse(
   process.env['DATABASE_' + process.env.NODE_ENV],
@@ -38,7 +43,7 @@ let databaseCredentials = JSON.parse(
     DriverModule,
     TypeOrmModule.forRoot({
       ...databaseCredentials,
-      entities: [Driver, Admin, Customer, Ride, Transaction],
+      entities: [Driver, Admin, Customer, Ride, Transaction,Offer],
     }),
     TypeOrmModule.forFeature([Driver, Admin, Customer]),
     LoginModule,
@@ -46,6 +51,7 @@ let databaseCredentials = JSON.parse(
     CustomerModule,
     RideModule,
     TransactionModule,
+    OfferModule,
   ],
   controllers: [AppController],
   providers: [AppService, LoggerService, DriverService],
@@ -96,7 +102,8 @@ export class AppModule implements NestModule {
         AdminController,
         CustomerController,
         RideController,
-        TransactionController
+        TransactionController,
+        OfferController
       );
   }
 }

@@ -53,27 +53,17 @@ export class RideService {
         startTime: new Date().getTime(),
       });
       if (ride.raw.insertId > 0) {
-        let rideTransactionId =
-          await this.rideHelperService.createRideTransaction({
-            customerId,
-            amount: body.amount,
-            rideId: ride.raw.insertId,
-          });
-        if (rideTransactionId) {
-          messages[1] = 'The transaction has already been created successfully';
-        } else {
-          await this.rideRepository.delete(ride.raw.insertId);
-          throw new Error('Unable to register the transaction for the ride');
-        }
         let createdRide = await this.rideRepository.findOne({
           where: [{ id: ride.raw.insertId }],
         });
         data.push(createdRide);
-        await this.pushNotifyService.notifyDriversForRide(
-          body.startLocation,
-          body.amount,
-        );
+        let responseMessage: string =
+          await this.pushNotifyService.notifyDriversForRide(
+            body.startLocation,
+            body.amount,
+          );
         messages[0] = 'The ride has been started successfully';
+        messages[1] = responseMessage;
         statusCode = STATUS_SUCCESS;
         return;
       } else {
@@ -96,7 +86,6 @@ export class RideService {
     id: number,
     body: UpdateRideDto,
   ): Promise<responseInterface> {
-    console.log(body.role);
     let messages = [],
       statusCode = STATUS_SUCCESS,
       data = [];
@@ -114,6 +103,10 @@ export class RideService {
       let ride: Ride = await this.rideRepository.findOneBy({ id });
       let rideTransactionId = '';
       if (ride == null) throw new Error('No ride is present with id ' + id);
+      else if (body.authId !== ride.driverId)
+        throw new Error('You are not authorized for this ride');
+      else if (ride.endTime || ride.transactionId)
+        throw new Error('Ride is already completed');
       else {
         rideTransactionId = await this.rideHelperService.createRideTransaction({
           customerId: ride.customerId,
@@ -126,20 +119,22 @@ export class RideService {
           throw new Error('Unable to register the transaction for the ride');
         }
       }
-
-      if (body.authId !== ride.driverId)
-        throw new Error('You are not authorized for this ride');
-      if (ride.endTime) throw new Error('Ride is already completed');
-
       removeKeysFromBody(['role', 'authId'], body);
       let updatedRide = await this.rideRepository.update(id, {
-        ...body,
+        endTime: new Date().getTime(),
         transactionId: rideTransactionId,
       });
       if (updatedRide.affected == 1) {
-        ride.endTime = body.endTime;
-        ride.transactionId = body.transactionId;
-        messages.push('The ride has been completed succesfully');
+        ride.endTime = new Date().getTime();
+        ride.transactionId = rideTransactionId;
+        messages[0] = 'The ride has been completed succesfully';
+        let notificationResponse =
+          await this.pushNotifyService.notifyRideCompletion({
+            driverId: ride.driverId,
+            customerId: ride.customerId,
+            amount: ride.amount,
+          });
+        messages[1] = notificationResponse;
         statusCode = STATUS_SUCCESS;
         data = [{ ...ride, transactionId: rideTransactionId }];
         return;

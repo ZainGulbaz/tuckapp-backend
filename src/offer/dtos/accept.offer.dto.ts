@@ -1,12 +1,14 @@
 import { IsNumber, IsOptional, IsString } from 'class-validator';
 
-export class UpdateRideDto {
-
-  @IsOptional()
+export class AcceptOfferDto {
   @IsNumber()
-  authId: number;
+  offerId: number;
 
   @IsOptional()
   @IsString()
   role: string;
+
+  @IsOptional()
+  @IsNumber()
+  authId: number;
 }

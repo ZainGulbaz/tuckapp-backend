@@ -14,7 +14,10 @@ export class RideController {
   }
 
   @Get()
-  async getAvailableRides(@Query() query: AllRidesDto, @Body() body: { role: string }) {
+  async getAvailableRides(
+    @Query() query: AllRidesDto,
+    @Body() body: { role: string },
+  ) {
     return await this.rideService.getAvailableRides(query, body.role);
   }
 
@@ -26,13 +29,15 @@ export class RideController {
   @Put('assign/:id')
   async assignRide(
     @Param() param: { id: number },
-    @Body() body: { authId: number,role:string },
+    @Body() body: { authId: number; role: string },
   ) {
-    return await this.rideService.assignRide(param.id, body.authId,body.role);
+    return await this.rideService.assignRide(param.id, body.authId, body.role);
   }
 
-  @Get("all")
-  async getAllRides(@Body() body:{role:string}): Promise<responseInterface>{
+  @Get('all')
+  async getAllRides(
+    @Body() body: { role: string },
+  ): Promise<responseInterface> {
     return await this.rideService.getAllRides(body.role);
   }
 }
