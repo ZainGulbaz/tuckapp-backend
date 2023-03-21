@@ -108,24 +108,32 @@ export class DriverService {
     }
   }
 
-  async getDriver(id: number, role: string): Promise<responseInterface> {
+  async getDriver(
+    id: number,
+    role: string,
+    authId: number,
+  ): Promise<responseInterface> {
     let statusCode = STATUS_SUCCESS,
       data = [],
       messages = [];
 
     Logger.log('DRIVER SERVICE is called');
 
-    let isAllowed = verifyRoleAccess({
-      role,
-      allowedRoles: [roleEnums.admin, roleEnums.driver],
-    });
-    if (isAllowed !== true) {
-      statusCode = isAllowed.statusCode;
-      messages = isAllowed.messages;
-      return;
-    }
-
     try {
+      let isAllowed = verifyRoleAccess({
+        role,
+        allowedRoles: [roleEnums.admin, roleEnums.driver],
+      });
+      if (isAllowed !== true) {
+        statusCode = isAllowed.statusCode;
+        messages = isAllowed.messages;
+        return;
+      }
+
+      if (role == roleEnums.driver) {
+        if (authId != id) throw new Error('You cannot access other drivers Id');
+      }
+
       const driver = await this.driverRepository.findOneBy({ id });
       if (driver !== null) {
         delete driver.otp;

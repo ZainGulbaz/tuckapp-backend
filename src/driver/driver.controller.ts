@@ -39,9 +39,9 @@ export class DriverController {
   @Get(':id')
   async getDriver(
     @Param() params: { id: number },
-    @Body() body: { role: string },
+    @Body() body: { role: string,authId:number },
   ) {
-    return await this.driverService.getDriver(params.id, body.role);
+    return await this.driverService.getDriver(params.id, body.role,body.authId);
   }
 
   @Delete(':id')

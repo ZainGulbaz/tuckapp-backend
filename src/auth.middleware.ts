@@ -24,9 +24,15 @@ export class AuthMiddleware implements NestMiddleware {
     },
   };
 
-  checkDriverCredentials = async (res: Response, id: number) => {
+  checkDriverCredentials = async (
+    res: Response,
+    req: Request,
+    id: number,
+  ): Promise<Boolean> => {
     try {
+      if (this.filterDriverChecks(req.url, { id: id })) return false;
       let isDriverValidated = await this.loggerService.validateDriver(id);
+
       if (isDriverValidated !== true) {
         res.json({
           messages: [isDriverValidated],
@@ -43,9 +49,16 @@ export class AuthMiddleware implements NestMiddleware {
 
   credentialsFunctionMapping = {
     [roleEnums.driver]: this.checkDriverCredentials,
-    [roleEnums.customer]: (res: Response, id: number) => false,
-    [roleEnums.admin]: (res: Response, id: number) => false,
+    [roleEnums.customer]: (res: Response, req: Request, id: number) => false,
+    [roleEnums.admin]: (res: Response, req: Request, id: number) => false,
   };
+
+  filterDriverChecks(url: string, data: any) {
+    if (url == `/${process.env.GLOBAL_PREFIX}/driver/${data.id}`) {
+      return true;
+    }
+    return false;
+  }
 
   async use(req: Request, res: Response, next: NextFunction) {
     try {
@@ -59,7 +72,7 @@ export class AuthMiddleware implements NestMiddleware {
         let user = { username: undefined };
         user.username = await this.roleFunctionMapping[role](id);
 
-        if (await this.credentialsFunctionMapping[role](res, id)) {
+        if (await this.credentialsFunctionMapping[role](res, req, id)) {
           return;
         }
 
