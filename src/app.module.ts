@@ -33,8 +33,6 @@ import { RideModule } from './ride/ride.module';
 import { TransactionModule } from './transaction/transaction.module';
 import { OfferModule } from './offer/offer.module';
 
-
-
 let databaseCredentials = JSON.parse(
   process.env['DATABASE_' + process.env.NODE_ENV],
 );
@@ -43,7 +41,7 @@ let databaseCredentials = JSON.parse(
     DriverModule,
     TypeOrmModule.forRoot({
       ...databaseCredentials,
-      entities: [Driver, Admin, Customer, Ride, Transaction,Offer],
+      entities: [Driver, Admin, Customer, Ride, Transaction, Offer],
     }),
     TypeOrmModule.forFeature([Driver, Admin, Customer]),
     LoginModule,
@@ -94,6 +92,10 @@ export class AppModule implements NestModule {
           path: `${process.env.GLOBAL_PREFIX}/login/${CUSTOMER_ROUTE}`,
           method: RequestMethod.POST,
         },
+        {
+          path: `${process.env.GLOBAL_PREFIX}/${CUSTOMER_ROUTE}/otp`,
+          method: RequestMethod.POST,
+        },
       )
       .forRoutes(
         DriverController,
@@ -103,7 +105,7 @@ export class AppModule implements NestModule {
         CustomerController,
         RideController,
         TransactionController,
-        OfferController
+        OfferController,
       );
   }
 }
