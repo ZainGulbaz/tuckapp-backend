@@ -246,17 +246,12 @@ export class CustomerService {
       statusCode = STATUS_SUCCESS,
       data = [];
     try {
-      let isAllowed = verifyRoleAccess({
-        role,
-        allowedRoles: [roleEnums.customer],
-      });
-      if (isAllowed !== true) {
-        statusCode = isAllowed.statusCode;
-        messages = isAllowed.messages;
-        return;
-      }
       const otp = generateRandomOtp();
-      let res = await this.customerRepository.createQueryBuilder().update({otp}).where(`email = '${email}'`).execute();
+      let res = await this.customerRepository
+        .createQueryBuilder()
+        .update({ otp })
+        .where(`email = '${email}'`)
+        .execute();
       if (res.affected > 0) {
         let customer = await this.customerRepository.findOneBy({ email });
         if (!customer) throw new Error('Unable to find the customer');
