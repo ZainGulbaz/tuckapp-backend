@@ -7,8 +7,8 @@ export class CreateRideDto {
   @IsString()
   endLocation: string;
 
-  @IsString()
-  city: string;
+  // @IsString()
+  // city: string;
 
   @IsOptional()
   @IsString()

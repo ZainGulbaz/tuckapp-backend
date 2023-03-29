@@ -31,7 +31,9 @@ export class PushNotifyService {
     } catch (e) {
       if (e instanceof oneSignal.HTTPError) {
         console.log(e);
-        throw new Error(e.message);
+        return (
+          'Unable to send notifications to the drivers for ride: ' + e.message
+        );
       }
     }
   }

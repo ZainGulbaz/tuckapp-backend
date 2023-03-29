@@ -14,4 +14,9 @@ export class Offer {
 
   @Column()
   amount: number;
+
+  @Column({
+    type: 'bigint',
+  })
+  expiryTime: BigInt;
 }

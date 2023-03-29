@@ -3,7 +3,7 @@ import { STATUS_FAILED, STATUS_SUCCESS } from 'src/utils/codes';
 import { responseInterface } from 'src/utils/interfaces/response';
 import { CreateOfferDto } from './dtos/create.offer.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { MoreThan, Repository } from 'typeorm';
 import { Offer } from './offer.entity';
 import { Ride } from 'src/ride/ride.entity';
 import { verifyRoleAccess } from 'src/utils/commonfunctions';
@@ -42,6 +42,8 @@ export class OfferService {
       let createdOffer = await this.offerRepository.insert({
         ...body,
         driverId: authId,
+        expiryTime:
+          BigInt(new Date().getTime()) + BigInt(process.env.OFFER_EXPIRY_TIME),
       });
       if (createdOffer.raw.affectedRows == 1) {
         let notificationResMessage = await this.notifyOfferToCustomer(
@@ -91,7 +93,15 @@ export class OfferService {
 
       await this.checkRideValidation(ride);
 
-      let offers = await this.offerRepository.findBy({ rideId });
+      let offers = await this.offerRepository.find({
+        where: [
+          {
+            rideId,
+            expiryTime: MoreThan(new Date().getTime()),
+          },
+        ],
+      });
+
       messages.push('The offers are fetched successfully.');
       statusCode = STATUS_SUCCESS;
       data = offers;
@@ -127,6 +137,8 @@ export class OfferService {
         where: [{ id: body.offerId }],
       });
       if (acceptedOffer) {
+        if (BigInt(new Date().getTime()) > acceptedOffer.expiryTime)
+          throw new Error('The offer has been expired');
         const { rideId, amount, driverId } = acceptedOffer;
         let ride = await this.rideRepository.findOne({
           where: [{ id: rideId }],

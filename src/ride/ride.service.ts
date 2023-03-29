@@ -47,9 +47,11 @@ export class RideService {
       const customerId = body.authId;
       delete body.authId;
 
+      let city = await this.getCityFromRide(body.startLocation);
       let ride = await this.rideRepository.insert({
         ...body,
         customerId,
+        city,
         startTime: new Date().getTime(),
       });
       if (ride.raw.insertId > 0) {
@@ -287,6 +289,19 @@ export class RideService {
         messages,
         data,
       };
+    }
+  }
+  async getCityFromRide(startCoordinates: string) {
+    try {
+      let city = await this.rideRepository.query(
+        `SELECT * FROM osmcities WHERE ST_CONTAINS(ST_GEOMFROMTEXT (CONCAT('Polygon((',refined_coordinates,',',SUBSTRING(refined_coordinates,1,INSTR(refined_coordinates,',')-1) ,'))')),POINT(${startCoordinates}))`,
+      );
+      if (city.length > 0) {
+        return city[0].name;
+      }
+      throw new Error('The service is not available for this city');
+    } catch (err) {
+      throw new Error(err.message);
     }
   }
 }
