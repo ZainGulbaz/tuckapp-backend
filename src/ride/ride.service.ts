@@ -11,6 +11,7 @@ import {
 } from 'src/utils/codes';
 import {
   removeKeysFromBody,
+  reverseCoordinates,
   verifyRoleAccess,
 } from 'src/utils/commonfunctions';
 import { roleEnums, waitingMinutes } from 'src/utils/enums';
@@ -173,7 +174,7 @@ export class RideService {
         return;
       }
 
-      const { coordinates: currentCoordinates, radius } = body;
+      let { coordinates: currentCoordinates, radius } = body;
       if (currentCoordinates == '') throw new Error('Inavlid Coordinates');
 
       let availableRides = await this.rideRepository.query(
@@ -293,6 +294,8 @@ export class RideService {
   }
   async getCityFromRide(startCoordinates: string) {
     try {
+      startCoordinates = reverseCoordinates(startCoordinates);
+      console.log(startCoordinates);
       let city = await this.rideRepository.query(
         `SELECT * FROM osmcities WHERE ST_CONTAINS(ST_GEOMFROMTEXT (CONCAT('Polygon((',refined_coordinates,',',SUBSTRING(refined_coordinates,1,INSTR(refined_coordinates,',')-1) ,'))')),POINT(${startCoordinates}))`,
       );

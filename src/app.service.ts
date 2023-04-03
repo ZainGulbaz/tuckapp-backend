@@ -6,7 +6,7 @@ import { STATUS_FAILED, STATUS_SUCCESS } from './utils/codes';
 import { responseInterface } from './utils/interfaces/response';
 import { hashSync, genSaltSync } from 'bcrypt';
 import { roleEnums } from './utils/enums';
-import { verifyRoleAccess } from './utils/commonfunctions';
+import { generateRandomOtp, verifyRoleAccess } from './utils/commonfunctions';
 @Injectable()
 export class AppService {
   constructor(
@@ -20,8 +20,7 @@ export class AppService {
   async generateOtp(id: number, role: string): Promise<responseInterface> {
     let statusCode = STATUS_SUCCESS,
       messages = [],
-      data = [],
-      digitisOfOtp = 1000000;
+      data = [];
 
     try {
       let isAllowed = verifyRoleAccess({
@@ -34,7 +33,7 @@ export class AppService {
         return;
       }
 
-      let otp = Math.floor(Math.random() * digitisOfOtp);
+      let otp = generateRandomOtp(parseInt(process.env.DIGITS_OTP));
       const salt = genSaltSync();
       const encryptedOtp = hashSync(otp + '', salt);
       let res = await this.driverRepository.update(id, { otp: encryptedOtp });

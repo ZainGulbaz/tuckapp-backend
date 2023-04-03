@@ -54,8 +54,15 @@ export function removeKeysFromBody(keys: string[], body: object) {
   keys?.map((key) => delete body[key]);
 }
 
-export function generateRandomOtp() {
-  return Math.floor(Math.random() * 1000000);
+export function generateRandomOtp(noOfDigits: number): number {
+  var digits = '0123456789';
+  let OTP = '';
+  for (let i = 0; i < noOfDigits; i++) {
+    let data = digits[Math.floor(Math.random() * 10)];
+    if (data == '0') i--;
+    else OTP += data;
+  }
+  return parseInt(OTP);
 }
 
 export function checkKeys(keys: string[], obj: any): boolean {
@@ -68,3 +75,6 @@ export function checkKeys(keys: string[], obj: any): boolean {
   }
   return false;
 }
+
+export const reverseCoordinates = (coordinates: string): string =>
+  coordinates.split(',').reverse().join(',').replace(',', '');

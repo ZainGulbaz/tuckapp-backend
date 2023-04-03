@@ -246,7 +246,7 @@ export class CustomerService {
       statusCode = STATUS_SUCCESS,
       data = [];
     try {
-      const otp = generateRandomOtp();
+      const otp: number = generateRandomOtp(parseInt(process.env.DIGITS_OTP));
       let res = await this.customerRepository
         .createQueryBuilder()
         .update({ otp })

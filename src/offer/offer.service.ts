@@ -137,7 +137,7 @@ export class OfferService {
         where: [{ id: body.offerId }],
       });
       if (acceptedOffer) {
-        if (BigInt(new Date().getTime()) > acceptedOffer.expiryTime)
+        if (new Date().getTime() + '' == acceptedOffer.expiryTime + '')
           throw new Error('The offer has been expired');
         const { rideId, amount, driverId } = acceptedOffer;
         let ride = await this.rideRepository.findOne({
