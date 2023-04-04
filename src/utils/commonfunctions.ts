@@ -77,4 +77,4 @@ export function checkKeys(keys: string[], obj: any): boolean {
 }
 
 export const reverseCoordinates = (coordinates: string): string =>
-  coordinates.split(',').reverse().join(',').replace(',', '');
+  coordinates.split(',').reverse().join(',');
