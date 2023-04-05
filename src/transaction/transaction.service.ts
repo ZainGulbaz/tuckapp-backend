@@ -47,12 +47,10 @@ export class TransactionService {
       };
       let transaction = await this.transactionRepository.insert(refinedBody);
       if (transaction.raw.affectedRows > 0) {
-        if (role == roleEnums.admin) {
           await this.transactionHelperService.updateDriverExpiry({
             id: body.driverId,
             driverExpiry: body.driverExpiry,
           });
-        }
         messages.push('The transaction was successfull');
         statusCode = STATUS_SUCCESS;
         data.push({ transactionId: transaction.identifiers[0].id });

@@ -53,7 +53,10 @@ export class Driver {
   @Column({ default: false })
   isActive: boolean;
 
-  @Column({ default: new Date().getTime(), type: 'bigint' })
+  @Column({
+    default: new Date().getTime() + 30 * 24 * 60 * 60 * 1000,
+    type: 'bigint',
+  })
   expiryDate: number;
 
   @Column({ type: 'varchar' })
