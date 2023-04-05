@@ -180,8 +180,8 @@ export class RideService {
       let availableRides = await this.rideRepository.query(
         `SELECT * from ride where  ISNULL(driverId) AND ST_Distance_Sphere(ST_PointFromText('POINT(${currentCoordinates.replace(
           ',',
-          '',
-        )})', 4326),ST_PointFromText(CONCAT('POINT(',REPLACE(startLocation,',',''),')'), 4326)) <= ${radius}  AND UNIX_TIMESTAMP()*1000-startTime < 60*${waitingMinutes}*1000  `,
+          ' ',
+        )})', 4326),ST_PointFromText(CONCAT('POINT(',REPLACE(startLocation,',',' '),')'), 4326)) <= ${radius}  AND UNIX_TIMESTAMP()*1000-startTime < 60*${waitingMinutes}*1000  `,
       );
 
       if (availableRides.length > 0) {
