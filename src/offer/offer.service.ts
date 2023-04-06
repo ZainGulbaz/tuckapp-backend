@@ -46,12 +46,12 @@ export class OfferService {
           BigInt(new Date().getTime()) + BigInt(process.env.OFFER_EXPIRY_TIME),
       });
       if (createdOffer.raw.affectedRows == 1) {
-        let notificationResMessage = await this.notifyOfferToCustomer(
-          body.rideId,
-          body.amount,
-        );
+        //  let notificationResMessage = await this.notifyOfferToCustomer(
+        //    body.rideId,
+        //   body.amount,
+        // );
         messages.push('The offer is successfully send to the customer');
-        messages.push(notificationResMessage);
+        //messages.push(notificationResMessage);
         statusCode = STATUS_SUCCESS;
       } else {
         throw new Error('Error in creating offer');
@@ -160,16 +160,16 @@ export class OfferService {
         let [customer] = await this.rideRepository.query(
           `SELECT * FROM customer WHERE id=${ride.customerId}`,
         );
-        let notifyResponseMessage = await this.notifyAcceptedOffers({
-          driverToken: driver.oneSignalToken,
-          customerToken: '',
-          amount: ride.amount,
-          customerName: customer.firstName + ' ' + customer.lastName,
-          driverName: driver.firstName + ' ' + driver.lastName,
-        });
+        // let notifyResponseMessage = await this.notifyAcceptedOffers({
+        //   driverToken: driver.oneSignalToken,
+        //   customerToken: '',
+        //   amount: ride.amount,
+        //   customerName: customer.firstName + ' ' + customer.lastName,
+        //   driverName: driver.firstName + ' ' + driver.lastName,
+        // });
         messages.push('The offer has been accepted successfully');
         messages.push('The ride has been updated successfully');
-        messages.push(notifyResponseMessage);
+        // messages.push(notifyResponseMessage);
         statusCode = STATUS_SUCCESS;
       } else {
         throw new Error('Could not find the offer for given offerId');
