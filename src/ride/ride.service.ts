@@ -1,8 +1,9 @@
 import { Injectable, Body, Inject } from '@nestjs/common';
 import { CreateRideDto } from './dtos/create.ride.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { Ride } from './ride.entity';
+import { Driver } from 'src/driver/driver.entity';
 import { responseInterface } from 'src/utils/interfaces/response';
 import {
   STATUS_FAILED,
@@ -24,6 +25,7 @@ import { RideHelperService } from './ride.helper.service';
 export class RideService {
   constructor(
     @InjectRepository(Ride) private rideRepository: Repository<Ride>,
+    @InjectRepository(Driver) private driverRepository: Repository<Driver>,
     @Inject(PushNotifyService)
     private readonly pushNotifyService: PushNotifyService,
     @Inject(RideHelperService)
@@ -44,6 +46,9 @@ export class RideService {
         messages = isAllowed.messages;
         return;
       }
+
+      body.startLocation = body.startLocation.trim();
+      body.endLocation = body.endLocation.trim();
 
       const customerId = body.authId;
       delete body.authId;
@@ -102,6 +107,12 @@ export class RideService {
         messages = isAllowed.messages;
         return;
       }
+
+      let freeDriver = await this.driverRepository.update(body.authId, {
+        onRide: 0,
+      });
+      if (freeDriver.affected < 1)
+        throw new Error('The driver is not updated successfully');
 
       let ride: Ride = await this.rideRepository.findOneBy({ id });
       let rideTransactionId = '';
@@ -230,6 +241,14 @@ export class RideService {
         return;
       }
 
+      let driverRes = await this.driverRepository.findOne({
+        where: {
+          id: driverId,
+        },
+      });
+      if (driverRes.onRide !== 0)
+        throw new Error('The driver is already completing a ride');
+
       let res = await this.rideRepository
         .createQueryBuilder()
         .update()
@@ -239,6 +258,11 @@ export class RideService {
 
       if (res.affected > 0) {
         statusCode = STATUS_SUCCESS;
+        let driverResponse = await this.driverRepository.update(driverId, {
+          onRide: id,
+        });
+        if (driverResponse.affected < 1)
+          throw new Error('The driver was not updated successfully');
         messages.push('The ride has been assigned to you');
         let ride = await this.rideRepository.findOne({ where: { id } });
         data.push(ride);
@@ -249,6 +273,7 @@ export class RideService {
     } catch (err) {
       statusCode = STATUS_FAILED;
       messages.push('The ride cannot be assigned successfully');
+      messages.push(err.message);
     } finally {
       return {
         statusCode,
@@ -305,6 +330,38 @@ export class RideService {
       throw new Error('The service is not available for this city');
     } catch (err) {
       throw new Error(err.message);
+    }
+  }
+
+  async getCurrentRide(driverId: number) {
+    let statusCode = STATUS_SUCCESS,
+      messages = [],
+      data = [];
+    try {
+      let driverCurrentRide = await this.driverRepository.findOne({
+        where: { id: driverId },
+      });
+      if (driverCurrentRide.onRide < 1)
+        throw new Error('There is currently no ride assigned to the driver');
+      let currentRide = await this.rideRepository.findOne({
+        where: { id: driverCurrentRide.onRide },
+      });
+      console.log(currentRide);
+      if (!currentRide)
+        throw new Error('Error in getting ride for the specific driver');
+      data = [currentRide];
+      statusCode = STATUS_SUCCESS;
+      messages.push('The current ride of the driver is successfully fetched');
+    } catch (err) {
+      messages.push('The current ride of the driver is not fetched');
+      messages.push(err.message);
+      statusCode = STATUS_FAILED;
+    } finally {
+      return {
+        statusCode,
+        messages,
+        data,
+      };
     }
   }
 }

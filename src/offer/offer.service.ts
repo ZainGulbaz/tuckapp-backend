@@ -6,6 +6,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { MoreThan, Repository } from 'typeorm';
 import { Offer } from './offer.entity';
 import { Ride } from 'src/ride/ride.entity';
+import { Driver } from 'src/driver/driver.entity';
 import { verifyRoleAccess } from 'src/utils/commonfunctions';
 import { roleEnums } from 'src/utils/enums';
 import { removeKeysFromBody } from 'src/utils/commonfunctions';
@@ -17,6 +18,7 @@ export class OfferService {
   constructor(
     @InjectRepository(Offer) private offerRepository: Repository<Offer>,
     @InjectRepository(Ride) private rideRepository: Repository<Ride>,
+    @InjectRepository(Driver) private driverRepository: Repository<Driver>,
   ) {}
   async createOffer(body: CreateOfferDto): Promise<responseInterface> {
     let messages = [],
@@ -133,6 +135,7 @@ export class OfferService {
         messages = isAllowed.messages;
         return;
       }
+
       let acceptedOffer: Offer = await this.offerRepository.findOne({
         where: [{ id: body.offerId }],
       });
@@ -140,6 +143,15 @@ export class OfferService {
         if (new Date().getTime() + '' == acceptedOffer.expiryTime + '')
           throw new Error('The offer has been expired');
         const { rideId, amount, driverId } = acceptedOffer;
+
+        let driverRes = await this.driverRepository.findOne({
+          where: {
+            id: driverId,
+          },
+        });
+        if (driverRes.onRide !== 0)
+          throw new Error('The driver is already completing a ride');
+
         let ride = await this.rideRepository.findOne({
           where: [{ id: rideId }],
         });
@@ -151,15 +163,22 @@ export class OfferService {
           amount,
           driverId,
         });
+
+        let driverUpdatedRes = await this.driverRepository.update(driverId, {
+          onRide: rideId,
+        });
+
+        if (driverUpdatedRes.affected < 1)
+          throw new Error('The driver is not updated successfully');
         if (acceptedRide.affected !== 1)
           throw new Error('Unable to update the ride');
 
-        let [driver] = await this.rideRepository.query(
-          `SELECT * FROM driver WHERE id=${driverId}`,
-        );
-        let [customer] = await this.rideRepository.query(
-          `SELECT * FROM customer WHERE id=${ride.customerId}`,
-        );
+        // let [driver] = await this.rideRepository.query(
+        //   `SELECT * FROM driver WHERE id=${driverId}`,
+        // );
+        // let [customer] = await this.rideRepository.query(
+        //   `SELECT * FROM customer WHERE id=${ride.customerId}`,
+        // );
         // let notifyResponseMessage = await this.notifyAcceptedOffers({
         //   driverToken: driver.oneSignalToken,
         //   customerToken: '',

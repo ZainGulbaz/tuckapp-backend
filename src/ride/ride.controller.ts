@@ -40,4 +40,9 @@ export class RideController {
   ): Promise<responseInterface> {
     return await this.rideService.getAllRides(body.role);
   }
+
+  @Get('current')
+  async getCurrentRide(@Body() body: { role: string; authId: number }) {
+    return this.rideService.getCurrentRide(body.authId);
+  }
 }

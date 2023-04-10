@@ -61,4 +61,7 @@ export class Driver {
 
   @Column({ type: 'varchar' })
   oneSignalToken: string;
+
+  @Column({})
+  onRide: number;
 }
