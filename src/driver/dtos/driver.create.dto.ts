@@ -26,9 +26,11 @@ export class createDriverDto {
   @IsString()
   lisencePlate: string;
 
+  @IsOptional()
   @IsString()
   gender: string;
 
+  @IsOptional()
   @IsNumber()
   dateOfBirth: number;
 

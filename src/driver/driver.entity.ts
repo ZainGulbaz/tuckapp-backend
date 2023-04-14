@@ -32,10 +32,10 @@ export class Driver {
   @Column({ default: false })
   registrationStatus: boolean;
 
-  @Column({ nullable: false })
+  @Column({ nullable: true })
   gender: string;
 
-  @Column({ nullable: false, type: 'bigint' })
+  @Column({ nullable: true, type: 'bigint' })
   dateOfBirth: number;
 
   @Column({ nullable: false })
@@ -62,6 +62,6 @@ export class Driver {
   @Column({ type: 'varchar' })
   oneSignalToken: string;
 
-  @Column({})
+  @Column({ default: 0 })
   onRide: number;
 }
