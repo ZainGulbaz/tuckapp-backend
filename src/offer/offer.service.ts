@@ -95,14 +95,9 @@ export class OfferService {
 
       await this.checkRideValidation(ride);
 
-      let offers = await this.offerRepository.find({
-        where: [
-          {
-            rideId,
-            expiryTime: MoreThan(new Date().getTime()),
-          },
-        ],
-      });
+      let offers = await this.offerRepository.query(
+        `SELECT off.id as id,off.driverId, off.rideId,off.amount,off.expiryTime,CONCAT(dr.firstName," ",dr.lastName) name,dr.lisencePlate, dr.truckPhoto FROM offer off JOIN driver dr ON off.driverId=dr.id WHERE rideId=${rideId} AND expiryTime>${new Date().getTime()}`,
+      );
 
       messages.push('The offers are fetched successfully.');
       statusCode = STATUS_SUCCESS;
