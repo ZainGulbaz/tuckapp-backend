@@ -1,4 +1,10 @@
-import { IsString, IsOptional, IsNumber, IsPhoneNumber } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsNumber,
+  IsPhoneNumber,
+  IsUUID,
+} from 'class-validator';
 
 export class createDriverDto {
   @IsString()
@@ -40,4 +46,12 @@ export class createDriverDto {
   @IsOptional()
   @IsNumber()
   chargePerKm: number;
+
+  @IsOptional()
+  @IsUUID()
+  oneSignalToken: string;
+
+  @IsOptional()
+  @IsString()
+  services: string;
 }

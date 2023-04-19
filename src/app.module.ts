@@ -17,7 +17,9 @@ import { Admin } from './admin/admin.entity';
 import { Ride } from './ride/ride.entity';
 import { Customer } from './customer/customer.entity';
 import { Transaction } from './transaction/transaction.entity';
+import { Service } from './services/services.entity';
 import { Offer } from './offer/offer.entity';
+import { Driver_Service } from './driver/driver_service.entity';
 import { AuthMiddleware } from './auth.middleware';
 import { LoggerService } from './auth.service';
 import { DataSource } from 'typeorm';
@@ -28,10 +30,12 @@ import { AdminModule } from './admin/admin.module';
 import { AdminController } from './admin/admin.controller';
 import { CustomerModule } from './customer/customer.module';
 import { CustomerController } from './customer/customer.controller';
+import { ServicesController } from './services/services.controller';
 import { OfferController } from './offer/offer.controller';
 import { RideModule } from './ride/ride.module';
 import { TransactionModule } from './transaction/transaction.module';
 import { OfferModule } from './offer/offer.module';
+import { ServicesModule } from './services/services.module';
 
 let databaseCredentials = JSON.parse(
   process.env['DATABASE_' + process.env.NODE_ENV],
@@ -41,15 +45,25 @@ let databaseCredentials = JSON.parse(
     DriverModule,
     TypeOrmModule.forRoot({
       ...databaseCredentials,
-      entities: [Driver, Admin, Customer, Ride, Transaction, Offer],
+      entities: [
+        Driver,
+        Admin,
+        Customer,
+        Ride,
+        Transaction,
+        Offer,
+        Service,
+        Driver_Service,
+      ],
     }),
-    TypeOrmModule.forFeature([Driver, Admin, Customer]),
+    TypeOrmModule.forFeature([Driver, Admin, Customer, Driver_Service]),
     LoginModule,
     AdminModule,
     CustomerModule,
     RideModule,
     TransactionModule,
     OfferModule,
+    ServicesModule,
   ],
   controllers: [AppController],
   providers: [AppService, LoggerService, DriverService],
@@ -106,6 +120,7 @@ export class AppModule implements NestModule {
         RideController,
         TransactionController,
         OfferController,
+        ServicesController,
       );
   }
 }

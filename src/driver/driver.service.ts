@@ -13,11 +13,14 @@ import { Repository } from 'typeorm';
 import { updateDriverDto } from './dtos/driver.update.dto';
 import { generateToken, verifyRoleAccess } from 'src/utils/commonfunctions';
 import { roleEnums } from 'src/utils/enums';
+import { Driver_Service } from './driver_service.entity';
 
 @Injectable()
 export class DriverService {
   constructor(
     @InjectRepository(Driver) private driverRepository: Repository<Driver>,
+    @InjectRepository(Driver_Service)
+    private driverServiceRepository: Repository<Driver_Service>,
   ) {}
 
   async createDriver(body: createDriverDto): Promise<responseInterface> {
@@ -36,7 +39,15 @@ export class DriverService {
           roleEnums.driver,
           body.phoneNumber,
         );
-
+        let servicesDriverArr = [];
+        if (body.services) {
+          servicesDriverArr = this.formDriverSerivieObj(
+            JSON.parse(body.services),
+            res.raw.insertId,
+          );
+          await this.driverServiceRepository.insert(servicesDriverArr);
+          delete body.services;
+        }
         data = [{ ...body, token }];
         Logger.log(
           `The request to register the driver is submitted successfully with id "${res.raw.insertId}"`,
@@ -134,15 +145,34 @@ export class DriverService {
         if (authId != id) throw new Error('You cannot access other drivers Id');
       }
 
-      const driver = await this.driverRepository.findOneBy({ id });
-      if (driver !== null) {
+      const driverRes = await this.driverRepository.find({
+        where: [{ id }],
+        select: {
+          driverServices: {
+            serviceId: true,
+            driverId: false,
+            id: false,
+            service: {
+              id: false,
+              name: true,
+            },
+          },
+        },
+        relations: {
+          driverServices: {
+            service: true,
+          },
+        },
+      });
+
+      if (driverRes) {
+        let [driver] = driverRes;
         delete driver.otp;
         data.push(driver);
         statusCode = STATUS_SUCCESS;
         messages.push('The driver was fetched successfully');
         Logger.log(`The driver with id ${id} is successfully fetched`);
       } else {
-        data.push(driver);
         statusCode = STATUS_NOTFOUND;
         messages.push('The driver was not found');
         Logger.warn(`The driver with id ${id} was not found`);
@@ -247,6 +277,22 @@ export class DriverService {
         messages,
         data,
       };
+    }
+  }
+
+  formDriverSerivieObj(servicesArray: number[], driverId: number) {
+    try {
+      let driverServiceObjArr = servicesArray.map((serviceId) => {
+        return {
+          serviceId,
+          driverId,
+        };
+      });
+      return driverServiceObjArr;
+    } catch (err) {
+      throw new Error(
+        'Error in mining object for driver_service entity ' + err.message,
+      );
     }
   }
 }

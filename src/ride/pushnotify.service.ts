@@ -53,7 +53,7 @@ export class PushNotifyService {
       );
       let driversToken = [];
       let title = 'A new ride is available';
-      let content = { en: `Amount:${amount}  Distance` };
+      let content = { en: `Amount:${amount}` };
       drivers?.map((driver: Driver) => {
         if (driver.oneSignalToken) driversToken.push(driver.oneSignalToken);
       });

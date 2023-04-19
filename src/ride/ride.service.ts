@@ -1,7 +1,7 @@
 import { Injectable, Body, Inject } from '@nestjs/common';
 import { CreateRideDto } from './dtos/create.ride.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Ride } from './ride.entity';
 import { Driver } from 'src/driver/driver.entity';
 import { responseInterface } from 'src/utils/interfaces/response';

@@ -1,4 +1,5 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
+import { Driver_Service } from './driver_service.entity';
 
 @Entity()
 export class Driver {
@@ -59,9 +60,12 @@ export class Driver {
   })
   expiryDate: number;
 
-  @Column({ type: 'varchar' })
+  @Column({ type: 'varchar', nullable: true })
   oneSignalToken: string;
 
   @Column({ default: 0 })
   onRide: number;
+
+  @OneToMany(() => Driver_Service, (driverService) => driverService.driver)
+  driverServices: Driver_Service[];
 }
