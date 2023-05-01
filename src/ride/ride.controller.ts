@@ -16,9 +16,13 @@ export class RideController {
   @Get()
   async getAvailableRides(
     @Query() query: AllRidesDto,
-    @Body() body: { role: string },
+    @Body() body: { role: string; authId: number },
   ) {
-    return await this.rideService.getAvailableRides(query, body.role);
+    return await this.rideService.getAvailableRides(
+      query,
+      body.role,
+      body.authId,
+    );
   }
 
   @Put('complete/:id')

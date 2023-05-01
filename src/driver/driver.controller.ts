@@ -129,4 +129,15 @@ export class DriverController {
   ) {
     return this.uploadService.handleLisencePhotoUpload(body);
   }
+
+  @Put('location/:coordinates')
+  async updateCoordinates(
+    @Param() params: { coordinates: string },
+    @Body() body: { authId: number },
+  ) {
+    return this.driverService.updateCoordinates(
+      params.coordinates,
+      body.authId,
+    );
+  }
 }

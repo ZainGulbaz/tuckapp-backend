@@ -43,6 +43,9 @@ export class createDriverDto {
   @IsNumber()
   truckBedLength: number;
 
+  @IsNumber()
+  categoryId: number;
+
   @IsOptional()
   @IsNumber()
   chargePerKm: number;

@@ -18,6 +18,7 @@ import { Ride } from './ride/ride.entity';
 import { Customer } from './customer/customer.entity';
 import { Transaction } from './transaction/transaction.entity';
 import { Service } from './services/services.entity';
+import { Category } from './category/category.entity';
 import { Offer } from './offer/offer.entity';
 import { Driver_Service } from './driver/driver_service.entity';
 import { AuthMiddleware } from './auth.middleware';
@@ -30,12 +31,12 @@ import { AdminModule } from './admin/admin.module';
 import { AdminController } from './admin/admin.controller';
 import { CustomerModule } from './customer/customer.module';
 import { CustomerController } from './customer/customer.controller';
-import { ServicesController } from './services/services.controller';
 import { OfferController } from './offer/offer.controller';
 import { RideModule } from './ride/ride.module';
 import { TransactionModule } from './transaction/transaction.module';
 import { OfferModule } from './offer/offer.module';
 import { ServicesModule } from './services/services.module';
+import { CategoryModule } from './category/category.module';
 
 let databaseCredentials = JSON.parse(
   process.env['DATABASE_' + process.env.NODE_ENV],
@@ -53,10 +54,17 @@ let databaseCredentials = JSON.parse(
         Transaction,
         Offer,
         Service,
+        Category,
         Driver_Service,
       ],
     }),
-    TypeOrmModule.forFeature([Driver, Admin, Customer, Driver_Service]),
+    TypeOrmModule.forFeature([
+      Driver,
+      Admin,
+      Customer,
+      Driver_Service,
+      Category,
+    ]),
     LoginModule,
     AdminModule,
     CustomerModule,
@@ -64,6 +72,7 @@ let databaseCredentials = JSON.parse(
     TransactionModule,
     OfferModule,
     ServicesModule,
+    CategoryModule,
   ],
   controllers: [AppController],
   providers: [AppService, LoggerService, DriverService],
@@ -120,7 +129,6 @@ export class AppModule implements NestModule {
         RideController,
         TransactionController,
         OfferController,
-        ServicesController,
       );
   }
 }

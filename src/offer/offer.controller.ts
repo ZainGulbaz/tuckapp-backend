@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Param } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Put } from '@nestjs/common';
 import { responseInterface } from 'src/utils/interfaces/response';
 import { AcceptOfferDto } from './dtos/accept.offer.dto';
 import { CreateOfferDto } from './dtos/create.offer.dto';
@@ -21,8 +21,15 @@ export class OfferController {
       body.authId,
     );
   }
-  @Post("accept")
+  @Post('accept')
   async acceptOffer(@Body() body: AcceptOfferDto): Promise<responseInterface> {
     return await this.offerService.acceptOffer(body);
+  }
+  @Put('cancel/:id')
+  async cancelOffer(
+    @Param() params: { id: number },
+    @Body() body: { role: string },
+  ) {
+    return await this.offerService.cancelOffer(params.id, body.role);
   }
 }

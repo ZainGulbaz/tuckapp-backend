@@ -15,6 +15,9 @@ export class Offer {
   @Column()
   amount: number;
 
+  @Column({ default: 0 })
+  isCancel: number;
+
   @Column({
     type: 'bigint',
   })

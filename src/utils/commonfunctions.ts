@@ -78,3 +78,8 @@ export function checkKeys(keys: string[], obj: any): boolean {
 
 export const reverseCoordinates = (coordinates: string): string =>
   coordinates.split(',').reverse().join(',');
+
+export const parseNull = (data: string | number): string => {
+  if (data == null || data == undefined) return "''";
+  return `'${data}'`;
+};

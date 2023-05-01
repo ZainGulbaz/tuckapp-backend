@@ -11,15 +11,17 @@ import {
   STATUS_SUCCESS,
 } from 'src/utils/codes';
 import {
+  parseNull,
   removeKeysFromBody,
   reverseCoordinates,
   verifyRoleAccess,
 } from 'src/utils/commonfunctions';
-import { roleEnums, waitingMinutes } from 'src/utils/enums';
+import { roleEnums } from 'src/utils/enums';
 import { UpdateRideDto } from './dtos/update.ride.dto';
 import { AllRidesDto } from './dtos/all.rides.dtos';
 import { PushNotifyService } from './pushnotify.service';
 import { RideHelperService } from './ride.helper.service';
+import { validateServiceCategory } from 'src/utils/crossservicesmethods';
 
 @Injectable()
 export class RideService {
@@ -48,8 +50,9 @@ export class RideService {
       }
 
       body.startLocation = body.startLocation.trim();
-      body.endLocation = body.endLocation.trim();
+      body.endLocation ? (body.endLocation = body.endLocation.trim()) : null;
 
+      await this.validateRideLocation(body);
       const customerId = body.authId;
       delete body.authId;
 
@@ -69,8 +72,10 @@ export class RideService {
           await this.pushNotifyService.notifyDriversForRide(
             body.startLocation,
             body.amount,
+            body.categoryId,
+            body.serviceId,
           );
-        messages[0] = 'The ride has been started successfully';
+        messages[0] = 'The ride has been created successfully';
         messages[1] = responseMessage;
         statusCode = STATUS_SUCCESS;
         return;
@@ -78,6 +83,7 @@ export class RideService {
         throw new Error('The ride was not inserted in the database');
       }
     } catch (err) {
+      console.log(err);
       messages.push('The ride cannot be started');
       messages.push(err.message);
       statusCode = STATUS_FAILED;
@@ -169,6 +175,7 @@ export class RideService {
   async getAvailableRides(
     body: AllRidesDto,
     role: string,
+    authId: number,
   ): Promise<responseInterface> {
     let statusCode = STATUS_SUCCESS,
       messages = [],
@@ -188,13 +195,16 @@ export class RideService {
       let { coordinates: currentCoordinates, radius } = body;
       if (currentCoordinates == '') throw new Error('Inavlid Coordinates');
 
-      let availableRides = await this.rideRepository.query(
-        `SELECT * from ride where  ISNULL(driverId) AND ST_Distance_Sphere(ST_PointFromText('POINT(${currentCoordinates.replace(
-          ',',
-          ' ',
-        )})', 4326),ST_PointFromText(CONCAT('POINT(',REPLACE(startLocation,',',' '),')'), 4326)) <= ${radius}  AND UNIX_TIMESTAMP()*1000-startTime < 60*${waitingMinutes}*1000  `,
-      );
+      let query = `SELECT rd.id id, startTime, endTime, startLocation, endLocation,rd.amount,rd.city,rd.serviceId,sr.name serviceName, rd.categoryId, cr.name categoryName FROM ride rd LEFT JOIN service sr ON rd.serviceId=sr.id LEFT JOIN category cr ON rd.categoryId=cr.id WHERE ISNULL(rd.driverId) AND ST_Distance_Sphere(ST_PointFromText('POINT(${currentCoordinates.replace(
+        ',',
+        ' ',
+      )})', 4326),ST_PointFromText(CONCAT('POINT(',REPLACE(startLocation,',',' '),')'), 4326)) <= ${parseNull(
+        radius,
+      )}  AND ((UNIX_TIMESTAMP() *1000)-startTime) < ${
+        process.env.RIDE_EXPIRY_TIME
+      } AND (categoryId=(SELECT categoryId from driver where id=${authId}) OR serviceId IN (SELECT serviceId from driver_service where driverId=${authId}))`;
 
+      let availableRides = await this.rideRepository.query(query);
       if (availableRides.length > 0) {
         statusCode = STATUS_SUCCESS;
         messages.push('The rides are fetched successfully');
@@ -241,6 +251,9 @@ export class RideService {
         return;
       }
 
+      let ride = await this.rideRepository.findOne({ where: { id } });
+      await validateServiceCategory(driverId, ride, this.driverRepository);
+
       let driverRes = await this.driverRepository.findOne({
         where: {
           id: driverId,
@@ -254,6 +267,7 @@ export class RideService {
         .update()
         .set({ driverId })
         .where('ISNULL(driverId)')
+        .andWhere(`id=${id}`)
         .execute();
 
       if (res.affected > 0) {
@@ -264,8 +278,7 @@ export class RideService {
         if (driverResponse.affected < 1)
           throw new Error('The driver was not updated successfully');
         messages.push('The ride has been assigned to you');
-        let ride = await this.rideRepository.findOne({ where: { id } });
-        data.push(ride);
+        data.push({ ...ride, driverId });
         return;
       } else {
         throw new Error('Ride was not updated');
@@ -320,7 +333,6 @@ export class RideService {
   async getCityFromRide(startCoordinates: string) {
     try {
       startCoordinates = reverseCoordinates(startCoordinates);
-      console.log(startCoordinates);
       let city = await this.rideRepository.query(
         `SELECT * FROM osmcities WHERE ST_CONTAINS(ST_GEOMFROMTEXT (CONCAT('Polygon((',refined_coordinates,',',SUBSTRING(refined_coordinates,1,INSTR(refined_coordinates,',')-1) ,'))')),POINT(${startCoordinates}))`,
       );
@@ -346,7 +358,6 @@ export class RideService {
       let currentRide = await this.rideRepository.findOne({
         where: { id: driverCurrentRide.onRide },
       });
-      console.log(currentRide);
       if (!currentRide)
         throw new Error('Error in getting ride for the specific driver');
       data = [currentRide];
@@ -362,6 +373,17 @@ export class RideService {
         messages,
         data,
       };
+    }
+  }
+
+  async validateRideLocation(body: CreateRideDto) {
+    try {
+      if (body.serviceId && body.endLocation && !body.categoryId)
+        throw new Error('End location is not valid for this request');
+      else if (!body.serviceId && !body.endLocation)
+        throw new Error('End Location must be specified for this request');
+    } catch (err) {
+      throw new Error(err.message);
     }
   }
 }

@@ -1,4 +1,4 @@
-import { Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, PrimaryGeneratedColumn, Index } from 'typeorm';
 import { Entity } from 'typeorm';
 
 @Entity()
@@ -9,7 +9,7 @@ export class Ride {
   @Column({ nullable: false })
   startLocation: string;
 
-  @Column({ nullable: false })
+  @Column({ nullable: true })
   endLocation: string;
 
   @Column({ nullable: false })
@@ -26,6 +26,14 @@ export class Ride {
 
   @Column({ nullable: true, unique: true, type: 'longtext' })
   transactionId: string;
+
+  @Index('service-idx')
+  @Column({ nullable: true })
+  serviceId: number;
+
+  @Index('category-idx')
+  @Column({ nullable: true })
+  categoryId: number;
 
   @Column({ nullable: false })
   amount: number;

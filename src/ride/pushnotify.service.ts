@@ -6,6 +6,7 @@ import * as oneSignal from 'onesignal-node';
 import createNotification from 'src/utils/onesignal/createnotifications';
 import { Driver } from 'src/driver/driver.entity';
 import { Customer } from 'src/customer/customer.entity';
+import { parseNull } from 'src/utils/commonfunctions';
 
 @Injectable()
 export class PushNotifyService {
@@ -41,16 +42,21 @@ export class PushNotifyService {
   async notifyDriversForRide(
     startLocation: string,
     amount: number,
+    categoryId: number,
+    serviceId: number,
   ): Promise<string> {
     try {
-      let drivers = await this.driverRepository.query(
-        `SELECT * from driver WHERE ST_Distance_Sphere(ST_PointFromText('POINT(${startLocation.replace(
-          ',',
-          '',
-        )})', 4326),ST_PointFromText(CONCAT('POINT(',REPLACE(currentCoordinates,',',''),')'), 4326)) <= ${
-          process.env.RIDE_MAX_DISTANCE
-        } `,
-      );
+      let query = `SELECT dr.id,dr.oneSignalToken from driver dr JOIN driver_service sr ON dr.id=sr.driverId WHERE ST_Distance_Sphere(ST_PointFromText('POINT(${startLocation.replace(
+        ',',
+        ' ',
+      )})', 4326),ST_PointFromText(CONCAT('POINT(',REPLACE(currentCoordinates,',',' '),')'), 4326)) <= ${
+        process.env.RIDE_MAX_DISTANCE
+      }  AND (dr.categoryId=${parseNull(
+        categoryId,
+      )} OR sr.serviceId=${parseNull(serviceId)}) GROUP BY dr.id`;
+      let drivers = await this.driverRepository.query(query);
+      console.log(query);
+      console.log(drivers);
       let driversToken = [];
       let title = 'A new ride is available';
       let content = { en: `Amount:${amount}` };

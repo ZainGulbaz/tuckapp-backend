@@ -3,7 +3,7 @@ import { STATUS_FAILED, STATUS_SUCCESS } from 'src/utils/codes';
 import { responseInterface } from 'src/utils/interfaces/response';
 import { CreateOfferDto } from './dtos/create.offer.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { MoreThan, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Offer } from './offer.entity';
 import { Ride } from 'src/ride/ride.entity';
 import { Driver } from 'src/driver/driver.entity';
@@ -13,6 +13,7 @@ import { removeKeysFromBody } from 'src/utils/commonfunctions';
 import createNotification from 'src/utils/onesignal/createnotifications';
 import oneSignalClient from 'src/utils/onesignal';
 import { AcceptOfferDto } from './dtos/accept.offer.dto';
+import { validateServiceCategory } from 'src/utils/crossservicesmethods';
 @Injectable()
 export class OfferService {
   constructor(
@@ -37,10 +38,12 @@ export class OfferService {
         return;
       }
 
-      await this.checkRideValidation(
-        await this.rideRepository.findOne({ where: [{ id: body.rideId }] }),
-      );
-
+      let ride = await this.rideRepository.findOne({
+        where: [{ id: body.rideId }],
+      });
+      await validateServiceCategory(authId, ride, this.driverRepository);
+      await this.checkRideValidation(ride);
+      ``;
       let createdOffer = await this.offerRepository.insert({
         ...body,
         driverId: authId,
@@ -96,7 +99,7 @@ export class OfferService {
       await this.checkRideValidation(ride);
 
       let offers = await this.offerRepository.query(
-        `SELECT off.id as id,off.driverId, off.rideId,off.amount,off.expiryTime,CONCAT(dr.firstName," ",dr.lastName) name,dr.lisencePlate, dr.truckPhoto FROM offer off JOIN driver dr ON off.driverId=dr.id WHERE rideId=${rideId} AND expiryTime>${new Date().getTime()}`,
+        `SELECT off.id as id,off.driverId, off.rideId,off.amount,off.expiryTime,CONCAT(dr.firstName," ",dr.lastName) name,dr.lisencePlate, dr.truckPhoto FROM offer off JOIN driver dr ON off.driverId=dr.id WHERE rideId=${rideId} AND isCancel=0 AND expiryTime>${new Date().getTime()}`,
       );
 
       messages.push('The offers are fetched successfully.');
@@ -201,6 +204,56 @@ export class OfferService {
     }
   }
 
+  async cancelOffer(offerId: number, role: string): Promise<responseInterface> {
+    let messages = [],
+      statusCode = STATUS_SUCCESS,
+      data = [];
+    try {
+      let isAllowed = verifyRoleAccess({
+        role,
+        allowedRoles: [roleEnums.customer],
+      });
+      if (isAllowed !== true) {
+        statusCode = isAllowed.statusCode;
+        messages = isAllowed.messages;
+        return;
+      }
+      let [offer] = await this.offerRepository.query(
+        `SELECT off.isCancel,off.driverId driverId, rd.driverId rideDriverId, CONCAT(cu.firstName,' ',cu.lastName) customerName FROM ride rd JOIN offer off ON rd.id=off.rideId JOIN customer cu ON cu.id=rd.customerId WHERE off.id=${offerId} Limit 1`,
+      );
+      if (offer.driverId) {
+        if (offer.rideDriverId !== null)
+          throw new Error('The ride is already assigned to a driver');
+        let updateOffer = await this.offerRepository.update(offerId, {
+          isCancel: 1,
+        });
+        if (updateOffer.affected < 1)
+          throw new Error('The offer object is not updated successfully');
+
+        let driver = await this.driverRepository.findOne({
+          where: { id: offer.driverId },
+        });
+        let notificationResponse = await this.notifyCanceledOffer(
+          driver.oneSignalToken,
+          offer.customerName,
+        );
+        messages.push('The offer is canceled successfully');
+        messages.push(notificationResponse);
+        statusCode = STATUS_SUCCESS;
+      } else throw new Error('The offer with this offerId does not exist');
+    } catch (err) {
+      messages.push('The offer cannot be canceled successfully');
+      messages.push(err.message);
+      statusCode = STATUS_FAILED;
+    } finally {
+      return {
+        statusCode,
+        messages,
+        data,
+      };
+    }
+  }
+
   async notifyOfferToCustomer(rideId: number, amount: number) {
     try {
       let customer = await this.rideRepository.query(
@@ -213,7 +266,7 @@ export class OfferService {
           throw new Error('No one signal token is present for the customer');
         let notification = createNotification(
           'A new offer from the driver',
-          { en: `I will take you at AED ${amount}` },
+          { en: `A new offer from the driver AED: ${amount}` },
           [oneSignalToken],
         );
         let response = await oneSignalClient.createNotification(notification);
@@ -263,6 +316,22 @@ export class OfferService {
         'Unable to notify customer and driver for accepted offer:  ' +
         err.message
       );
+    }
+  }
+
+  async notifyCanceledOffer(driverToken: string, customerName: string) {
+    try {
+      let notification = createNotification(
+        'The offer has been canceled',
+        {
+          en: `Your offer has been canceled by ${customerName}. You can make a new offer`,
+        },
+        [driverToken],
+      );
+      let response = await oneSignalClient.createNotification(notification);
+      return 'The push notifications has been successfully send';
+    } catch (err) {
+      return 'Unable to notify driver for the canceled offer :  ' + err.message;
     }
   }
 }

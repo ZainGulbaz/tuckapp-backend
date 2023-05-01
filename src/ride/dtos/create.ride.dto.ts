@@ -4,11 +4,9 @@ export class CreateRideDto {
   @IsString()
   startLocation: string;
 
+  @IsOptional()
   @IsString()
   endLocation: string;
-
-  // @IsString()
-  // city: string;
 
   @IsOptional()
   @IsString()
@@ -20,4 +18,12 @@ export class CreateRideDto {
 
   @IsNumber()
   amount: number;
+
+  @IsOptional()
+  @IsNumber()
+  categoryId: number;
+
+  @IsOptional()
+  @IsNumber()
+  serviceId: number;
 }

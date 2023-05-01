@@ -9,6 +9,7 @@ import {
 import 'dotenv/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Driver } from './driver.entity';
+import { Category } from 'src/category/category.entity';
 import { Repository } from 'typeorm';
 import { updateDriverDto } from './dtos/driver.update.dto';
 import { generateToken, verifyRoleAccess } from 'src/utils/commonfunctions';
@@ -21,6 +22,8 @@ export class DriverService {
     @InjectRepository(Driver) private driverRepository: Repository<Driver>,
     @InjectRepository(Driver_Service)
     private driverServiceRepository: Repository<Driver_Service>,
+    @InjectRepository(Category)
+    private categoryServiceRepository: Repository<Category>,
   ) {}
 
   async createDriver(body: createDriverDto): Promise<responseInterface> {
@@ -31,7 +34,9 @@ export class DriverService {
     Logger.log('DRIVER SERVICE is called');
 
     try {
-      let res = await this.driverRepository.insert(body);
+      let res = await this.driverRepository.insert({
+        ...body,
+      });
       if (res.raw.insertId > 0) {
         statusCode = STATUS_SUCCESS;
         let token = generateToken(
@@ -46,9 +51,11 @@ export class DriverService {
             res.raw.insertId,
           );
           await this.driverServiceRepository.insert(servicesDriverArr);
+
           delete body.services;
+          delete body.categoryId;
         }
-        data = [{ ...body, token }];
+        data = [{ ...body, token, id: res.raw.insertId }];
         Logger.log(
           `The request to register the driver is submitted successfully with id "${res.raw.insertId}"`,
         );
@@ -99,7 +106,25 @@ export class DriverService {
         return;
       }
 
-      let drivers = await this.driverRepository.find({});
+      const drivers = await this.driverRepository.find({
+        select: {
+          driverServices: {
+            serviceId: true,
+            driverId: false,
+            id: false,
+            service: {
+              id: false,
+              name: true,
+            },
+          },
+        },
+        relations: {
+          driverServices: {
+            service: true,
+          },
+          category: true,
+        },
+      });
       Logger.log(`The drivers are fetched successfully`);
       messages.push('The drivers are fetched successfully');
       statusCode = STATUS_SUCCESS;
@@ -162,6 +187,7 @@ export class DriverService {
           driverServices: {
             service: true,
           },
+          category: true,
         },
       });
 
@@ -262,7 +288,7 @@ export class DriverService {
         Logger.log(`The driver with ${id} is updated successfully`);
       } else {
         messages.push('The driver is not updated successfully');
-        Logger.warn('The driver with ${id} is was not found');
+        Logger.warn(`The driver with ${id} is was not found`);
         statusCode = STATUS_NOTFOUND;
       }
     } catch (err) {
@@ -293,6 +319,34 @@ export class DriverService {
       throw new Error(
         'Error in mining object for driver_service entity ' + err.message,
       );
+    }
+  }
+  async updateCoordinates(
+    coordinates: string,
+    driverId: number,
+  ): Promise<responseInterface> {
+    let statusCode = STATUS_SUCCESS,
+      data = [],
+      messages = [];
+    try {
+      let updateCoordinates = await this.driverRepository.update(driverId, {
+        currentCoordinates: coordinates,
+      });
+      if (updateCoordinates.affected !== 1) {
+        throw new Error('The drivers current location is not updated');
+      }
+      messages.push('The driver current location is updated successfully');
+      statusCode=STATUS_SUCCESS;
+    } catch(err) {
+      messages.push('The drivers current location is not updated');
+      messages.push(err.message);
+      statusCode=STATUS_FAILED;
+    } finally {
+      return {
+        statusCode,
+        data,
+        messages
+      }
     }
   }
 }

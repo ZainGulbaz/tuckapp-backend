@@ -1,5 +1,12 @@
-import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  OneToMany,
+  ManyToOne,
+} from 'typeorm';
 import { Driver_Service } from './driver_service.entity';
+import { Category } from 'src/category/category.entity';
 
 @Entity()
 export class Driver {
@@ -66,6 +73,12 @@ export class Driver {
   @Column({ default: 0 })
   onRide: number;
 
+  @Column({ nullable: true })
+  categoryId: number;
+
   @OneToMany(() => Driver_Service, (driverService) => driverService.driver)
   driverServices: Driver_Service[];
+
+  @ManyToOne(() => Category, (category) => category.drivers)
+  category: Category;
 }
