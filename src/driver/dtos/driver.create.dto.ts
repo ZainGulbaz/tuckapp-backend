@@ -40,6 +40,7 @@ export class createDriverDto {
   @IsNumber()
   dateOfBirth: number;
 
+  @IsOptional()
   @IsNumber()
   truckBedLength: number;
 

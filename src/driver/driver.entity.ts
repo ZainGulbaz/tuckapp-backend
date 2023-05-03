@@ -46,7 +46,7 @@ export class Driver {
   @Column({ nullable: true, type: 'bigint' })
   dateOfBirth: number;
 
-  @Column({ nullable: false })
+  @Column({ nullable: true })
   truckBedLength: number;
 
   @Column({ default: null })
