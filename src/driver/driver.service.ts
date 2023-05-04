@@ -336,17 +336,74 @@ export class DriverService {
         throw new Error('The drivers current location is not updated');
       }
       messages.push('The driver current location is updated successfully');
-      statusCode=STATUS_SUCCESS;
-    } catch(err) {
+      statusCode = STATUS_SUCCESS;
+    } catch (err) {
       messages.push('The drivers current location is not updated');
       messages.push(err.message);
-      statusCode=STATUS_FAILED;
+      statusCode = STATUS_FAILED;
     } finally {
       return {
         statusCode,
         data,
-        messages
+        messages,
+      };
+    }
+  }
+  async driverOnChat(
+    driverId: number,
+    isChat: boolean | string,
+    role: string,
+  ): Promise<responseInterface> {
+    let statusCode = STATUS_SUCCESS,
+      data = [],
+      messages = [];
+    try {
+      let isAllowed = verifyRoleAccess({
+        role: role,
+        allowedRoles: [roleEnums.driver],
+      });
+      if (isAllowed !== true) {
+        statusCode = isAllowed.statusCode;
+        messages = isAllowed.messages;
+        return;
       }
+
+      let driver = await this.driverRepository.findOne({
+        where: { id: driverId },
+      });
+      if (!driver.id) throw new Error('The driver id is invalid');
+      else if (driver.id !== driverId)
+        throw new Error('You cannot access/change other drivers status');
+      else if (driver.onRide > 0)
+        throw new Error('Driver is already completing a ride');
+
+      let res = await this.driverRepository.update(driverId, {
+        onRide: isChat == 'true' ? -1 : 0,
+      });
+      if (res.affected > 0) {
+        messages.push(
+          `The chat status for driver is ${
+            isChat == 'true' ? 'activated' : 'deactivated'
+          } successfully`,
+        );
+      } else
+        throw new Error(
+          'The driver chat status is not updated in the database',
+        );
+    } catch (err) {
+      messages.push(
+        `The driver chat status is not ${
+          isChat == 'true' ? 'activated' : 'deactivated'
+        } successfully`,
+      );
+      messages.push(err.message);
+      statusCode = STATUS_FAILED;
+    } finally {
+      return {
+        messages,
+        statusCode,
+        data,
+      };
     }
   }
 }

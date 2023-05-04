@@ -8,3 +8,4 @@ export class CategoryController {
     return this.categoryService.getCategories();
   }
 }
+

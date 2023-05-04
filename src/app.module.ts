@@ -21,6 +21,8 @@ import { Service } from './services/services.entity';
 import { Category } from './category/category.entity';
 import { Offer } from './offer/offer.entity';
 import { Driver_Service } from './driver/driver_service.entity';
+import { Ride_Service } from './ride/ride-services.entity';
+import { Ride_Category } from './ride/ride-categories.entity';
 import { AuthMiddleware } from './auth.middleware';
 import { LoggerService } from './auth.service';
 import { DataSource } from 'typeorm';
@@ -56,6 +58,8 @@ let databaseCredentials = JSON.parse(
         Service,
         Category,
         Driver_Service,
+        Ride_Service,
+        Ride_Category,
       ],
     }),
     TypeOrmModule.forFeature([

@@ -20,10 +20,17 @@ export class CreateRideDto {
   amount: number;
 
   @IsOptional()
-  @IsNumber()
-  categoryId: number;
+  @IsString()
+  categories: string;
 
   @IsOptional()
-  @IsNumber()
-  serviceId: number;
+  @IsString()
+  services: string;
+
+  @IsString()
+  city: string;
+
+  @IsString()
+  country: string;
+  
 }

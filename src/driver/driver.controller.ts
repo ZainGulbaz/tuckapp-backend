@@ -1,14 +1,4 @@
-import {
-  Controller,
-  Post,
-  Get,
-  Param,
-  Body,
-  UploadedFile,
-  ParseFilePipe,
-  MaxFileSizeValidator,
-  FileTypeValidator,
-} from '@nestjs/common';
+import { Controller, Post, Get, Param, Body } from '@nestjs/common';
 import { Delete, Put, UseInterceptors } from '@nestjs/common/decorators';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { v4 as uuidv4 } from 'uuid';
@@ -138,6 +128,22 @@ export class DriverController {
     return this.driverService.updateCoordinates(
       params.coordinates,
       body.authId,
+    );
+  }
+
+  @Put('chat/:status')
+  async driverOnChat(
+    @Param() params: { status: string },
+    @Body()
+    body: {
+      authId: number;
+      role: string;
+    },
+  ) {
+    return await this.driverService.driverOnChat(
+      body.authId,
+      params.status,
+      body.role,
     );
   }
 }

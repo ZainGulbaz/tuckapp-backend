@@ -42,21 +42,33 @@ export class PushNotifyService {
   async notifyDriversForRide(
     startLocation: string,
     amount: number,
-    categoryId: number,
-    serviceId: number,
+    categories: string,
+    services: string,
   ): Promise<string> {
+    let categoriesStr = '',
+      servicesStr = '';
+    if (categories) {
+      categories = categories.replace('[', '');
+      categories = categories.replace(']', '');
+      categoriesStr = categories;
+    }
+    if (services) {
+      services = services.replace('[', '');
+      services = services.replace(']', '');
+      servicesStr = services;
+    }
     try {
-      let query = `SELECT dr.id,dr.oneSignalToken from driver dr JOIN driver_service sr ON dr.id=sr.driverId WHERE ST_Distance_Sphere(ST_PointFromText('POINT(${startLocation.replace(
+      let query = `SELECT dr.id,dr.oneSignalToken from driver dr JOIN driver_service sr ON dr.id=sr.driverId WHERE dr.onRide=0 AND ST_Distance_Sphere(ST_PointFromText('POINT(${startLocation.replace(
         ',',
         ' ',
       )})', 4326),ST_PointFromText(CONCAT('POINT(',REPLACE(currentCoordinates,',',' '),')'), 4326)) <= ${
         process.env.RIDE_MAX_DISTANCE
-      }  AND (dr.categoryId=${parseNull(
-        categoryId,
-      )} OR sr.serviceId=${parseNull(serviceId)}) GROUP BY dr.id`;
+      }  AND ( dr.categoryId IN (${
+        categoriesStr ? categoriesStr : 'null'
+      }) OR sr.serviceId IN (${
+        servicesStr ? servicesStr : null
+      })) GROUP BY dr.id`;
       let drivers = await this.driverRepository.query(query);
-      console.log(query);
-      console.log(drivers);
       let driversToken = [];
       let title = 'A new ride is available';
       let content = { en: `Amount:${amount}` };

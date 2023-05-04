@@ -13,7 +13,10 @@ import { removeKeysFromBody } from 'src/utils/commonfunctions';
 import createNotification from 'src/utils/onesignal/createnotifications';
 import oneSignalClient from 'src/utils/onesignal';
 import { AcceptOfferDto } from './dtos/accept.offer.dto';
-import { validateServiceCategory } from 'src/utils/crossservicesmethods';
+import {
+  validateDriverForRideAndOffers,
+  validateServiceCategory,
+} from 'src/utils/crossservicesmethods';
 @Injectable()
 export class OfferService {
   constructor(
@@ -41,7 +44,8 @@ export class OfferService {
       let ride = await this.rideRepository.findOne({
         where: [{ id: body.rideId }],
       });
-      await validateServiceCategory(authId, ride, this.driverRepository);
+      // await validateServiceCategory(authId, ride, this.driverRepository);
+      await validateDriverForRideAndOffers(this.driverRepository, authId);
       await this.checkRideValidation(ride);
       ``;
       let createdOffer = await this.offerRepository.insert({
@@ -99,9 +103,8 @@ export class OfferService {
       await this.checkRideValidation(ride);
 
       let offers = await this.offerRepository.query(
-        `SELECT off.id as id,off.driverId, off.rideId,off.amount,off.expiryTime,CONCAT(dr.firstName," ",dr.lastName) name,dr.lisencePlate, dr.truckPhoto FROM offer off JOIN driver dr ON off.driverId=dr.id WHERE rideId=${rideId} AND isCancel=0 AND expiryTime>${new Date().getTime()}`,
+        `SELECT off.id as id,(Select CONCAT('[',GROUP_CONCAT(DISTINCT(JSON_OBJECT(ct.id,ct.name))),']') from ride rd LEFT JOIN ride_category rc ON rc.rideId=rd.id LEFT JOIN category ct ON ct.id=rc.categoryId WHERE rd.id=${rideId} GROUP BY rd.id Limit 1) rideCategories,JSON_OBJECT(ct.id,ct.name) driverCategory,(Select CONCAT('[',GROUP_CONCAT(DISTINCT(JSON_OBJECT(sr.id,sr.name))),']') from ride rd LEFT JOIN ride_service rs ON rd.id=rs.rideId LEFT JOIN service sr ON sr.id=rs.serviceId WHERE rd.id=${rideId} Group by rd.id Limit 1) rideServices , CONCAT('[',GROUP_CONCAT(DISTINCT(JSON_OBJECT(sr.id,sr.name))),']') driverServices ,off.driverId, off.rideId,off.amount,off.expiryTime,CONCAT(dr.firstName," ",dr.lastName) name,dr.lisencePlate, dr.truckPhoto FROM offer off JOIN driver dr ON off.driverId=dr.id LEFT JOIN category ct ON ct.id=dr.categoryId LEFT JOIN driver_service drs ON drs.driverId=dr.id LEFT JOIN service sr ON sr.id=drs.serviceId WHERE off.rideId=${rideId} AND isCancel=0 AND expiryTime>${new Date().getTime()}  GROUP BY off.id`,
       );
-
       messages.push('The offers are fetched successfully.');
       statusCode = STATUS_SUCCESS;
       data = offers;

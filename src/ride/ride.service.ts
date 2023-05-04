@@ -4,6 +4,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Ride } from './ride.entity';
 import { Driver } from 'src/driver/driver.entity';
+import { Ride_Service } from './ride-services.entity';
+import { Ride_Category } from './ride-categories.entity';
 import { responseInterface } from 'src/utils/interfaces/response';
 import {
   STATUS_FAILED,
@@ -21,7 +23,10 @@ import { UpdateRideDto } from './dtos/update.ride.dto';
 import { AllRidesDto } from './dtos/all.rides.dtos';
 import { PushNotifyService } from './pushnotify.service';
 import { RideHelperService } from './ride.helper.service';
-import { validateServiceCategory } from 'src/utils/crossservicesmethods';
+import {
+  validateServiceCategory,
+  validateDriverForRideAndOffers,
+} from 'src/utils/crossservicesmethods';
 
 @Injectable()
 export class RideService {
@@ -32,6 +37,10 @@ export class RideService {
     private readonly pushNotifyService: PushNotifyService,
     @Inject(RideHelperService)
     private readonly rideHelperService: RideHelperService,
+    @InjectRepository(Ride_Service)
+    private rideServiceRepository: Repository<Ride_Service>,
+    @InjectRepository(Ride_Category)
+    private rideCategoryRepository: Repository<Ride_Category>,
   ) {}
 
   async createRide(@Body() body: CreateRideDto): Promise<responseInterface> {
@@ -53,16 +62,45 @@ export class RideService {
       body.endLocation ? (body.endLocation = body.endLocation.trim()) : null;
 
       await this.validateRideLocation(body);
-      const customerId = body.authId;
-      delete body.authId;
 
-      let city = await this.getCityFromRide(body.startLocation);
+      let { categories, services, authId: customerId } = body;
+      delete body.authId;
+      delete body.categories;
+      delete body.services;
+
+      // let city = await this.getCityFromRide(body.startLocation);
       let ride = await this.rideRepository.insert({
         ...body,
         customerId,
-        city,
         startTime: new Date().getTime(),
       });
+      if (categories) {
+        let categoriesBody = await this.refineJoinTableData(
+          ride.raw.insertId,
+          JSON.parse(categories),
+          'category',
+        );
+        let res = await this.rideCategoryRepository.insert(categoriesBody);
+        if (res.raw.insertId < 1)
+          throw new Error(
+            'Error in inserting ride_category join table for mapping',
+          );
+      }
+
+      if (services) {
+        let servicesBody = await this.refineJoinTableData(
+          ride.raw.insertId,
+          JSON.parse(services),
+          'service',
+        );
+
+        let res = await this.rideServiceRepository.insert(servicesBody);
+        if (res.raw.insertId < 1)
+          throw new Error(
+            'Error in inserting ride_service join table for mapping',
+          );
+      }
+
       if (ride.raw.insertId > 0) {
         let createdRide = await this.rideRepository.findOne({
           where: [{ id: ride.raw.insertId }],
@@ -72,9 +110,10 @@ export class RideService {
           await this.pushNotifyService.notifyDriversForRide(
             body.startLocation,
             body.amount,
-            body.categoryId,
-            body.serviceId,
+            categories,
+            services,
           );
+
         messages[0] = 'The ride has been created successfully';
         messages[1] = responseMessage;
         statusCode = STATUS_SUCCESS;
@@ -194,16 +233,16 @@ export class RideService {
 
       let { coordinates: currentCoordinates, radius } = body;
       if (currentCoordinates == '') throw new Error('Inavlid Coordinates');
+      await validateDriverForRideAndOffers(this.driverRepository, authId);
 
-      let query = `SELECT rd.id id, startTime, endTime, startLocation, endLocation,rd.amount,rd.city,rd.serviceId,sr.name serviceName, rd.categoryId, cr.name categoryName FROM ride rd LEFT JOIN service sr ON rd.serviceId=sr.id LEFT JOIN category cr ON rd.categoryId=cr.id WHERE ISNULL(rd.driverId) AND ST_Distance_Sphere(ST_PointFromText('POINT(${currentCoordinates.replace(
+      let query = `SELECT rd.id ,startTime, endTime, startLocation, endLocation,rd.amount,rd.city,CONCAT('[',GROUP_CONCAT(DISTINCT( JSON_OBJECT(sr.id,sr.name))),']') services , CONCAT('[',GROUP_CONCAT(DISTINCT( JSON_OBJECT(ct.id,ct.name))),']') categories FROM  ride rd LEFT JOIN ride_category rc ON rd.id=rc.rideId LEFT JOIN category ct ON ct.id=rc.categoryId LEFT JOIN driver dr ON dr.categoryId=rc.categoryId LEFT JOIN ride_service rs ON rs.rideId=rd.id  LEFT JOIN service sr ON sr.id=rs.serviceId LEFT JOIN driver_service drs ON drs.serviceId=rs.serviceId WHERE ISNULL(rd.driverId) AND ST_Distance_Sphere(ST_PointFromText('POINT(${currentCoordinates.replace(
         ',',
         ' ',
       )})', 4326),ST_PointFromText(CONCAT('POINT(',REPLACE(startLocation,',',' '),')'), 4326)) <= ${parseNull(
         radius,
       )}  AND ((UNIX_TIMESTAMP() *1000)-startTime) < ${
         process.env.RIDE_EXPIRY_TIME
-      } AND (categoryId=(SELECT categoryId from driver where id=${authId}) OR serviceId IN (SELECT serviceId from driver_service where driverId=${authId}))`;
-
+      }  AND (drs.driverId=${authId} OR dr.id=${authId}) GROUP BY rd.id `;
       let availableRides = await this.rideRepository.query(query);
       if (availableRides.length > 0) {
         statusCode = STATUS_SUCCESS;
@@ -251,8 +290,9 @@ export class RideService {
         return;
       }
 
+      await validateDriverForRideAndOffers(this.driverRepository, driverId);
       let ride = await this.rideRepository.findOne({ where: { id } });
-      await validateServiceCategory(driverId, ride, this.driverRepository);
+      //await validateServiceCategory(driverId, ride, this.driverRepository);
 
       let driverRes = await this.driverRepository.findOne({
         where: {
@@ -378,12 +418,27 @@ export class RideService {
 
   async validateRideLocation(body: CreateRideDto) {
     try {
-      if (body.serviceId && body.endLocation && !body.categoryId)
+      if (body.services && body.endLocation && !body.categories)
         throw new Error('End location is not valid for this request');
-      else if (!body.serviceId && !body.endLocation)
+      else if (!body.services && !body.endLocation)
         throw new Error('End Location must be specified for this request');
     } catch (err) {
       throw new Error(err.message);
+    }
+  }
+
+  async refineJoinTableData(
+    rideId: number,
+    entityData: number[],
+    entityName: string,
+  ): Promise<object[]> {
+    try {
+      let refinedData = entityData?.map((id) => {
+        return { rideId, [entityName + 'Id']: id };
+      });
+      return refinedData;
+    } catch (err) {
+      throw new Error('Error in refining data for join table ' + err.message);
     }
   }
 }
