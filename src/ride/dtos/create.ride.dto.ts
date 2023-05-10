@@ -32,5 +32,11 @@ export class CreateRideDto {
 
   @IsString()
   country: string;
+
+  @IsString()
+  pickupAddress:string;
+
+  @IsString()
+  destinationAddress:string;
   
 }

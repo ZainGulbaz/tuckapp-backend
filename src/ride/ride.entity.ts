@@ -27,13 +27,11 @@ export class Ride {
   @Column({ nullable: true, unique: true, type: 'longtext' })
   transactionId: string;
 
-  // @Index('service-idx')
-  // @Column({ nullable: true })
-  // serviceId: number;
+  @Column({nullable:false})
+  pickupAddress:string;
 
-  // @Index('category-idx')
-  // @Column({ nullable: true })
-  // categoryId: number;
+  @Column({nullable:false})
+  destinationAddress:string;
 
   @Column({ nullable: false })
   amount: number;
