@@ -47,6 +47,6 @@ export class RideController {
 
   @Get('current')
   async getCurrentRide(@Body() body: { role: string; authId: number }) {
-    return this.rideService.getCurrentRide(body.authId);
+    return this.rideService.getCurrentRide(body.authId,body.role);
   }
 }

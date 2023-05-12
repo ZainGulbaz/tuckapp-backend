@@ -30,7 +30,7 @@ export class Ride {
   @Column({nullable:false})
   pickupAddress:string;
 
-  @Column({nullable:false})
+  @Column({nullable:true})
   destinationAddress:string;
 
   @Column({ nullable: false })

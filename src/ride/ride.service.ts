@@ -24,7 +24,6 @@ import { AllRidesDto } from './dtos/all.rides.dtos';
 import { PushNotifyService } from './pushnotify.service';
 import { RideHelperService } from './ride.helper.service';
 import {
-  validateServiceCategory,
   validateDriverForRideAndOffers,
 } from 'src/utils/crossservicesmethods';
 
@@ -371,22 +370,40 @@ export class RideService {
       };
     }
   }
-  async getCityFromRide(startCoordinates: string) {
-    try {
-      startCoordinates = reverseCoordinates(startCoordinates);
-      let city = await this.rideRepository.query(
-        `SELECT * FROM osmcities WHERE ST_CONTAINS(ST_GEOMFROMTEXT (CONCAT('Polygon((',refined_coordinates,',',SUBSTRING(refined_coordinates,1,INSTR(refined_coordinates,',')-1) ,'))')),POINT(${startCoordinates}))`,
-      );
-      if (city.length > 0) {
-        return city[0].name;
+
+  async getCurrentRide(id: number,role:string) {
+    try{
+       
+      let isAllowed = verifyRoleAccess({
+        role,
+        allowedRoles: [roleEnums.customer,roleEnums.driver],
+      });
+      if (isAllowed !== true) {
+        return{
+         statusCode: isAllowed.statusCode,
+         messages: isAllowed.messages,
+         data:[]
+        };
       }
-      throw new Error('The service is not available for this city');
-    } catch (err) {
-      throw new Error(err.message);
+      if(role==roleEnums.customer) return await this.getCustomerCurrentRide(id);
+      else if(role==roleEnums.driver) return await this.getDriverCurrentRide(id);
     }
+
+    catch(err)
+    {
+
+      return{
+        messages:["Error in getting current ride",err.message],
+        statusCode:STATUS_FAILED,
+        data:[]
+      }
+
+    }
+    
   }
 
-  async getCurrentRide(driverId: number) {
+  async getDriverCurrentRide(driverId:number)
+  {
     let statusCode = STATUS_SUCCESS,
       messages = [],
       data = [];
@@ -405,6 +422,7 @@ export class RideService {
       statusCode = STATUS_SUCCESS;
       messages.push('The current ride of the driver is successfully fetched');
     } catch (err) {
+      console.log(err);
       messages.push('The current ride of the driver is not fetched');
       messages.push(err.message);
       statusCode = STATUS_FAILED;
@@ -415,14 +433,61 @@ export class RideService {
         data,
       };
     }
+
   }
 
+  async getCustomerCurrentRide(customerId:number):Promise<responseInterface>{
+    let statusCode=STATUS_SUCCESS,messages=[],data=[];
+    try{
+
+      let rides= await this.rideRepository.query(`SELECT * FROM ride WHERE customerId=${customerId} AND endTime IS NULL AND transactionId IS NULL AND startTime >${new Date().getTime()-24*60*60*1000} AND (driverId IS NOT NULL OR startTime>${new Date().getTime()-parseInt(process.env.RIDE_EXPIRY_TIME)})`);
+      data=rides;
+      statusCode=STATUS_SUCCESS;
+      messages.push("The ride has been fetched successfully"); 
+
+    }
+    catch(err)
+    {
+      messages.push("The customer ride is not fetched successfully");
+      messages.push(err.message);
+      statusCode=STATUS_FAILED;
+      data=[];
+
+    }
+    finally{
+return {
+  statusCode,
+  messages,
+  data
+}
+    }
+
+  }
+
+
+  async getCityFromRide(startCoordinates: string) {
+    try {
+      startCoordinates = reverseCoordinates(startCoordinates);
+      let city = await this.rideRepository.query(
+        `SELECT * FROM osmcities WHERE ST_CONTAINS(ST_GEOMFROMTEXT (CONCAT('Polygon((',refined_coordinates,',',SUBSTRING(refined_coordinates,1,INSTR(refined_coordinates,',')-1) ,'))')),POINT(${startCoordinates}))`,
+      );
+      if (city.length > 0) {
+        return city[0].name;
+      }
+      throw new Error('The service is not available for this city');
+    } catch (err) {
+      throw new Error(err.message);
+    }
+  }
+
+ 
   async validateRideLocation(body: CreateRideDto) {
     try {
-      if (body.services && body.endLocation && !body.categories)
-        throw new Error('End location is not valid for this request');
-      else if (!body.services && !body.endLocation)
-        throw new Error('End Location must be specified for this request');
+  
+      if (body.services && (body.endLocation || body.destinationAddress) && !body.categories)
+        throw new Error('End location/Address is not valid for this request');
+      else if (!body.services && (!body.endLocation || !body.destinationAddress) )
+        throw new Error('End Location/Address must be specified for this request');
     } catch (err) {
       throw new Error(err.message);
     }
@@ -442,4 +507,5 @@ export class RideService {
       throw new Error('Error in refining data for join table ' + err.message);
     }
   }
+
 }

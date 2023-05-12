@@ -36,6 +36,7 @@ export class CreateRideDto {
   @IsString()
   pickupAddress:string;
 
+  @IsOptional()
   @IsString()
   destinationAddress:string;
   
