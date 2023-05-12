@@ -67,7 +67,6 @@ export class RideService {
       delete body.categories;
       delete body.services;
 
-      // let city = await this.getCityFromRide(body.startLocation);
       let ride = await this.rideRepository.insert({
         ...body,
         customerId,
@@ -440,7 +439,7 @@ export class RideService {
     let statusCode=STATUS_SUCCESS,messages=[],data=[];
     try{
 
-      let rides= await this.rideRepository.query(`SELECT * FROM ride WHERE customerId=${customerId} AND endTime IS NULL AND transactionId IS NULL AND startTime >${new Date().getTime()-24*60*60*1000} AND (driverId IS NOT NULL OR startTime>${new Date().getTime()-parseInt(process.env.RIDE_EXPIRY_TIME)})`);
+      let rides= await this.rideRepository.query(`SELECT rd.id id, startLocation, endLocation, rd.customerId, rd.driverId, rd.startTime, rd.endTime, rd.transactionId, rd.city, rd.amount, rd.country, rd.pickupAddress, rd.destinationAddress, CONCAT('[',GROUP_CONCAT(DISTINCT(IF(s.id IS NULL,'',JSON_OBJECT('id',s.id,'name',s.name)))),']') services,CONCAT('[',GROUP_CONCAT(DISTINCT(IF(c.id IS NULL,'',JSON_OBJECT('id',c.id,'name',c.name)))),']')  categories FROM ride rd LEFT JOIN ride_service rs ON rd.id=rs.rideId LEFT JOIN service s ON rs.serviceId=s.id LEFT JOIN ride_category rc ON rc.rideId=rd.id LEFT JOIN category c ON rc.categoryId=c.id WHERE customerId=${customerId} AND endTime IS NULL AND transactionId IS NULL AND startTime >${new Date().getTime()-24*60*60*1000} AND (driverId IS NOT NULL OR startTime>${new Date().getTime()-parseInt(process.env.RIDE_EXPIRY_TIME)}) GROUP BY rd.id`);
       data=rides;
       statusCode=STATUS_SUCCESS;
       messages.push("The ride has been fetched successfully"); 
