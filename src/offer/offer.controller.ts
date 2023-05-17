@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Param, Put } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Put, Query } from '@nestjs/common';
 import { responseInterface } from 'src/utils/interfaces/response';
 import { AcceptOfferDto } from './dtos/accept.offer.dto';
 import { CreateOfferDto } from './dtos/create.offer.dto';
@@ -31,5 +31,11 @@ export class OfferController {
     @Body() body: { role: string },
   ) {
     return await this.offerService.cancelOffer(params.id, body.role);
+  }
+
+  @Get("/latest/cancel")
+  async getLatestCancelOffer(@Body() body:{authId:number,role:string})
+  {
+    return await this.offerService.getLatestCancelOffer(body.authId,body.role);
   }
 }

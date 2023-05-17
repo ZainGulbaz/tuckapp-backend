@@ -22,4 +22,7 @@ export class Offer {
     type: 'bigint',
   })
   expiryTime: BigInt;
+
+  @Column({default:0})
+  isNotified:number;
 }

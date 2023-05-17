@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { STATUS_FAILED, STATUS_SUCCESS } from 'src/utils/codes';
+import {
+  STATUS_FAILED,
+  STATUS_NOTFOUND,
+  STATUS_SUCCESS,
+} from 'src/utils/codes';
 import { responseInterface } from 'src/utils/interfaces/response';
 import { CreateOfferDto } from './dtos/create.offer.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -247,6 +251,50 @@ export class OfferService {
     } catch (err) {
       messages.push('The offer cannot be canceled successfully');
       messages.push(err.message);
+      statusCode = STATUS_FAILED;
+    } finally {
+      return {
+        statusCode,
+        messages,
+        data,
+      };
+    }
+  }
+
+  async getLatestCancelOffer(
+    driverId: number,
+    role: string,
+  ): Promise<responseInterface> {
+    let statusCode = STATUS_SUCCESS,
+      messages = [],
+      data = [];
+    try {
+      let isAllowed = verifyRoleAccess({
+        role,
+        allowedRoles: [roleEnums.driver],
+      });
+      if (isAllowed !== true) {
+        statusCode = isAllowed.statusCode;
+        messages = isAllowed.messages;
+        return;
+      }
+      let canceledOffer = await this.offerRepository.query(
+        `SELECT * FROM offer WHERE driverId=${driverId} AND isNotified=0 ORDER BY expiryTime DESC LIMIT 1`,
+      );
+      if (canceledOffer.length !== 0) {
+        [data] = canceledOffer;
+        await this.offerRepository.update(data["id"], { isNotified: 1 });
+        messages.push('The latest canceled offer has been found');
+        statusCode = STATUS_SUCCESS;
+      } else {
+        messages.push('There are no latest canceled offers found');
+        statusCode = STATUS_NOTFOUND;
+        data = [];
+      }
+    } catch (err) {
+      console.log(err);
+      messages.push('The latest canceled offer cannot be found successfully');
+      data = [];
       statusCode = STATUS_FAILED;
     } finally {
       return {
