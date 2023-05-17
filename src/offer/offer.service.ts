@@ -279,7 +279,7 @@ export class OfferService {
         return;
       }
       let canceledOffer = await this.offerRepository.query(
-        `SELECT * FROM offer WHERE driverId=${driverId} AND isNotified=0 ORDER BY expiryTime DESC LIMIT 1`,
+        `SELECT * FROM offer WHERE driverId=${driverId} AND isNotified=0 AND isCancel=1 ORDER BY expiryTime DESC LIMIT 1`,
       );
       if (canceledOffer.length !== 0) {
         [data] = canceledOffer;
