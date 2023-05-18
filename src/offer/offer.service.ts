@@ -281,7 +281,7 @@ export class OfferService {
       let canceledOffer = await this.offerRepository.query(
         `SELECT * FROM offer WHERE driverId=${driverId} AND isCancel=1 ORDER BY expiryTime DESC LIMIT 1`,
       );
-      if (canceledOffer.length !== 0 && this.cancelOffer[0]["isNotified"]==0) {
+      if (canceledOffer.length !== 0 && canceledOffer[0]["isNotified"]==0) {
         [data] = canceledOffer;
         await this.offerRepository.update(data["id"], { isNotified: 1 });
         messages.push('The latest canceled offer has been found');
