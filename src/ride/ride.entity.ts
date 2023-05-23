@@ -41,4 +41,7 @@ export class Ride {
 
   @Column()
   country: string;
+
+  @Column({default:0})
+  isCancel:number
 }

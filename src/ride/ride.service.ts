@@ -23,9 +23,7 @@ import { UpdateRideDto } from './dtos/update.ride.dto';
 import { AllRidesDto } from './dtos/all.rides.dtos';
 import { PushNotifyService } from './pushnotify.service';
 import { RideHelperService } from './ride.helper.service';
-import {
-  validateDriverForRideAndOffers,
-} from 'src/utils/crossservicesmethods';
+import { validateDriverForRideAndOffers } from 'src/utils/crossservicesmethods';
 
 @Injectable()
 export class RideService {
@@ -164,6 +162,7 @@ export class RideService {
         throw new Error('You are not authorized for this ride');
       else if (ride.endTime || ride.transactionId)
         throw new Error('Ride is already completed');
+      else if(ride.isCancel==1) throw new Error("The ride is canceled already");  
       else {
         rideTransactionId = await this.rideHelperService.createRideTransaction({
           customerId: ride.customerId,
@@ -240,7 +239,7 @@ export class RideService {
         radius,
       )}  AND ((UNIX_TIMESTAMP() *1000)-startTime) < ${
         process.env.RIDE_EXPIRY_TIME
-      }  AND (drs.driverId=${authId} OR dr.id=${authId}) GROUP BY rd.id `;
+      }  AND (drs.driverId=${authId} OR dr.id=${authId}) AND rd.isCancel=0 GROUP BY rd.id `;
       let availableRides = await this.rideRepository.query(query);
       if (availableRides.length > 0) {
         statusCode = STATUS_SUCCESS;
@@ -260,7 +259,7 @@ export class RideService {
       console.log(err);
       messages.push('There are no rides available yet');
       messages.push(err.message);
-      statusCode=STATUS_FAILED;
+      statusCode = STATUS_FAILED;
     } finally {
       return {
         messages,
@@ -291,6 +290,7 @@ export class RideService {
 
       await validateDriverForRideAndOffers(this.driverRepository, driverId);
       let ride = await this.rideRepository.findOne({ where: { id } });
+      if(ride.isCancel==1) throw new Error("The ride is canceled by the customer");
       //await validateServiceCategory(driverId, ride, this.driverRepository);
 
       let driverRes = await this.driverRepository.findOne({
@@ -370,39 +370,33 @@ export class RideService {
     }
   }
 
-  async getCurrentRide(id: number,role:string) {
-    try{
-       
+  async getCurrentRide(id: number, role: string) {
+    try {
       let isAllowed = verifyRoleAccess({
         role,
-        allowedRoles: [roleEnums.customer,roleEnums.driver],
+        allowedRoles: [roleEnums.customer, roleEnums.driver],
       });
       if (isAllowed !== true) {
-        return{
-         statusCode: isAllowed.statusCode,
-         messages: isAllowed.messages,
-         data:[]
+        return {
+          statusCode: isAllowed.statusCode,
+          messages: isAllowed.messages,
+          data: [],
         };
       }
-      if(role==roleEnums.customer) return await this.getCustomerCurrentRide(id);
-      else if(role==roleEnums.driver) return await this.getDriverCurrentRide(id);
+      if (role == roleEnums.customer)
+        return await this.getCustomerCurrentRide(id);
+      else if (role == roleEnums.driver)
+        return await this.getDriverCurrentRide(id);
+    } catch (err) {
+      return {
+        messages: ['Error in getting current ride', err.message],
+        statusCode: STATUS_FAILED,
+        data: [],
+      };
     }
-
-    catch(err)
-    {
-
-      return{
-        messages:["Error in getting current ride",err.message],
-        statusCode:STATUS_FAILED,
-        data:[]
-      }
-
-    }
-    
   }
 
-  async getDriverCurrentRide(driverId:number)
-  {
+  async getDriverCurrentRide(driverId: number) {
     let statusCode = STATUS_SUCCESS,
       messages = [],
       data = [];
@@ -413,7 +407,7 @@ export class RideService {
       if (driverCurrentRide.onRide < 1)
         throw new Error('There is currently no ride assigned to the driver');
       let currentRide = await this.rideRepository.findOne({
-        where: { id: driverCurrentRide.onRide },
+        where: { id: driverCurrentRide.onRide, isCancel:0 },
       });
       if (!currentRide)
         throw new Error('Error in getting ride for the specific driver');
@@ -432,38 +426,88 @@ export class RideService {
         data,
       };
     }
-
   }
 
-  async getCustomerCurrentRide(customerId:number):Promise<responseInterface>{
-    let statusCode=STATUS_SUCCESS,messages=[],data=[];
-    try{
+  async getCustomerCurrentRide(customerId: number): Promise<responseInterface> {
+    let statusCode = STATUS_SUCCESS,
+      messages = [],
+      data = [];
+    try {
+      let rides = await this.rideRepository.query(
+        `SELECT rd.id id, startLocation, endLocation, rd.customerId, rd.driverId, rd.startTime, rd.endTime, rd.transactionId, rd.city, rd.amount, rd.country,dr.currentCoordinates driverLocation ,rd.pickupAddress, rd.destinationAddress, CONCAT('[',GROUP_CONCAT(DISTINCT(IF(s.id IS NULL,'',JSON_OBJECT('id',s.id,'name',s.name)))),']') services,CONCAT('[',GROUP_CONCAT(DISTINCT(IF(c.id IS NULL,'',JSON_OBJECT('id',c.id,'name',c.name)))),']')  categories FROM ride rd LEFT JOIN ride_service rs ON rd.id=rs.rideId LEFT JOIN service s ON rs.serviceId=s.id LEFT JOIN ride_category rc ON rc.rideId=rd.id LEFT JOIN category c ON rc.categoryId=c.id LEFT JOIN driver dr ON rd.driverId=dr.id WHERE customerId=${customerId} AND endTime IS NULL AND transactionId IS NULL AND startTime >${
+          new Date().getTime() - 24 * 60 * 60 * 1000
+        } AND (driverId IS NOT NULL OR startTime>${
+          new Date().getTime() - parseInt(process.env.RIDE_EXPIRY_TIME)
+        }) AND ride.isCancel=0 GROUP BY rd.id`,
+      );
 
-      let rides= await this.rideRepository.query(`SELECT rd.id id, startLocation, endLocation, rd.customerId, rd.driverId, rd.startTime, rd.endTime, rd.transactionId, rd.city, rd.amount, rd.country,dr.currentCoordinates driverLocation ,rd.pickupAddress, rd.destinationAddress, CONCAT('[',GROUP_CONCAT(DISTINCT(IF(s.id IS NULL,'',JSON_OBJECT('id',s.id,'name',s.name)))),']') services,CONCAT('[',GROUP_CONCAT(DISTINCT(IF(c.id IS NULL,'',JSON_OBJECT('id',c.id,'name',c.name)))),']')  categories FROM ride rd LEFT JOIN ride_service rs ON rd.id=rs.rideId LEFT JOIN service s ON rs.serviceId=s.id LEFT JOIN ride_category rc ON rc.rideId=rd.id LEFT JOIN category c ON rc.categoryId=c.id LEFT JOIN driver dr ON rd.driverId=dr.id WHERE customerId=${customerId} AND endTime IS NULL AND transactionId IS NULL AND startTime >${new Date().getTime()-24*60*60*1000} AND (driverId IS NOT NULL OR startTime>${new Date().getTime()-parseInt(process.env.RIDE_EXPIRY_TIME)}) GROUP BY rd.id`);
-
-      data=rides;
-      statusCode=STATUS_SUCCESS;
-      messages.push("The ride has been fetched successfully"); 
-
-    }
-    catch(err)
-    {
-      messages.push("The customer ride is not fetched successfully");
+      data = rides;
+      statusCode = STATUS_SUCCESS;
+      messages.push('The ride has been fetched successfully');
+    } catch (err) {
+      messages.push('The customer ride is not fetched successfully');
       messages.push(err.message);
-      statusCode=STATUS_FAILED;
-      data=[];
-
+      statusCode = STATUS_FAILED;
+      data = [];
+    } finally {
+      return {
+        statusCode,
+        messages,
+        data,
+      };
     }
-    finally{
-return {
-  statusCode,
-  messages,
-  data
-}
-    }
-
   }
 
+  async cancelRide(rideId: number, role: string): Promise<responseInterface> {
+    let statusCode = STATUS_SUCCESS,
+      data = [],
+      messages = [];
+    try {
+      let isAllowed = verifyRoleAccess({
+        role: role,
+        allowedRoles: [roleEnums.customer],
+      });
+      if (isAllowed !== true) {
+        statusCode = isAllowed.statusCode;
+        messages = isAllowed.messages;
+        return;
+      }
+
+      let ride= await this.rideRepository.findOne({where:{id:rideId}});
+
+      if(ride==null) throw new Error("There is no ride with id in the database");
+      else if(ride.isCancel==1){
+        messages.push("The ride is already cancelled");
+        statusCode=STATUS_FAILED;
+        return;
+      }
+      else if(ride.endTime){
+        messages.push("The ride is already completed");
+        statusCode=STATUS_FAILED;
+        return;
+      }
+
+      let canceledRide = await this.rideRepository.update(rideId, {
+        isCancel: 1,
+      });
+      if (canceledRide.affected > 0) {
+        await this.driverRepository.query(`UPDATE driver SET onRide=0 where onRide=${rideId}`);
+        messages.push('The ride has been canceled successfully');
+        statusCode = STATUS_SUCCESS;
+        return;
+      }
+      throw new Error('The ride is not updated in the database');
+    } catch (err) {
+      messages = ['The ride is not canceled successfully', err.message];
+      statusCode = STATUS_FAILED;
+    } finally {
+      return {
+        statusCode,
+        data,
+        messages,
+      };
+    }
+  }
 
   async getCityFromRide(startCoordinates: string) {
     try {
@@ -480,14 +524,21 @@ return {
     }
   }
 
- 
   async validateRideLocation(body: CreateRideDto) {
     try {
-  
-      if (body.services && (body.endLocation || body.destinationAddress) && !body.categories)
+      if (
+        body.services &&
+        (body.endLocation || body.destinationAddress) &&
+        !body.categories
+      )
         throw new Error('End location/Address is not valid for this request');
-      else if (!body.services && (!body.endLocation || !body.destinationAddress) )
-        throw new Error('End Location/Address must be specified for this request');
+      else if (
+        !body.services &&
+        (!body.endLocation || !body.destinationAddress)
+      )
+        throw new Error(
+          'End Location/Address must be specified for this request',
+        );
     } catch (err) {
       throw new Error(err.message);
     }
@@ -507,5 +558,4 @@ return {
       throw new Error('Error in refining data for join table ' + err.message);
     }
   }
-
 }

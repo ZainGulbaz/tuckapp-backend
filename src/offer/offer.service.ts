@@ -330,6 +330,7 @@ export class OfferService {
     }
   }
   async checkRideValidation(ride: Ride) {
+    console.log(ride);
     try {
       if (ride == null) throw new Error('The ride id provided is invalid');
       else if (
@@ -340,6 +341,8 @@ export class OfferService {
       else if (ride.endTime) throw new Error('The ride is completed already');
       else if (ride.driverId)
         throw new Error('The ride is already assigned to a driver');
+      else if(ride.isCancel==1)
+      throw new Error("The ride is canceled already");  
     } catch (err) {
       throw new Error(err.message);
     }

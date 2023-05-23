@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Put, Query, Param, Get } from '@nestjs/common';
+import { Controller, Post, Body, Put, Query, Param, Get, Delete } from '@nestjs/common';
 import { responseInterface } from 'src/utils/interfaces/response';
 import { AllRidesDto } from './dtos/all.rides.dtos';
 import { CreateRideDto } from './dtos/create.ride.dto';
@@ -48,5 +48,10 @@ export class RideController {
   @Get('current')
   async getCurrentRide(@Body() body: { role: string; authId: number }) {
     return this.rideService.getCurrentRide(body.authId,body.role);
+  }
+
+  @Delete('cancel/:rideId')
+  async cancelRide(@Param() params:{rideId:number},@Body() body:{role:string}){
+    return await this.rideService.cancelRide(params.rideId,body.role);
   }
 }
