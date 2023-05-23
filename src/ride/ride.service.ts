@@ -438,7 +438,7 @@ export class RideService {
           new Date().getTime() - 24 * 60 * 60 * 1000
         } AND (driverId IS NOT NULL OR startTime>${
           new Date().getTime() - parseInt(process.env.RIDE_EXPIRY_TIME)
-        }) AND ride.isCancel=0 GROUP BY rd.id`,
+        }) AND rd.isCancel=0 GROUP BY rd.id`,
       );
 
       data = rides;
