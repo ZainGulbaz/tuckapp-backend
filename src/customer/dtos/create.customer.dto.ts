@@ -16,6 +16,7 @@ export class CreateCustomerDto {
   @IsEmail()
   email: string;
 
+  @IsOptional()
   @IsPhoneNumber()
   phoneNumber: string;
 
@@ -25,6 +26,7 @@ export class CreateCustomerDto {
   @IsString()
   city: string;
 
+  @IsOptional()
   @IsString()
   gender: string;
 

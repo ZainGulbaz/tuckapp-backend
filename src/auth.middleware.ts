@@ -35,7 +35,7 @@ export class AuthMiddleware implements NestMiddleware {
 
       if (isDriverValidated !== true) {
         res.json({
-          messages: [isDriverValidated],
+          message: [isDriverValidated],
           statusCode: STATUS_UNAUTHORIZED,
           data: [],
         });
@@ -83,7 +83,7 @@ export class AuthMiddleware implements NestMiddleware {
         } else {
           res.json({
             statusCode: STATUS_UNAUTHORIZED,
-            messages: [
+            message: [
               'The user is unauthorized',
               'Authorization Failed! No user found',
             ],
@@ -93,7 +93,7 @@ export class AuthMiddleware implements NestMiddleware {
       } else {
         res.json({
           statusCode: STATUS_UNAUTHORIZED,
-          messages: [
+          message: [
             'The user is unauthorized',
             'Authorization Failed! No token found',
           ],
@@ -104,7 +104,7 @@ export class AuthMiddleware implements NestMiddleware {
       console.log(err);
       res.json({
         statusCode: STATUS_FAILED,
-        messages: ['The user is unauthorized', err.message],
+        message: ['The user is unauthorized', err.message],
         data: [],
       });
     }

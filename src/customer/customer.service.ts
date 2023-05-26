@@ -27,12 +27,12 @@ export class CustomerService {
     body: CreateCustomerDto,
     file,
   ): Promise<responseInterface> {
-    let messages = [],
+    let message = [],
       data = [],
       statusCode = STATUS_SUCCESS;
     try {
       if (body.uploadStatusCode == STATUS_FAILED) {
-        messages.push(body.uploadMessage);
+        message.push(body.uploadMessage);
         statusCode = STATUS_FAILED;
         return;
       }
@@ -50,19 +50,19 @@ export class CustomerService {
         Logger.log(
           `The customer is created successfully with id "${res.raw.insertId}"`,
         );
-        messages.push('The customer is created successfully');
+        message.push('The customer is created successfully');
       } else {
         Logger.log('The customer cannot be created successfully');
-        messages.push('The customer cannot be created successfully');
+        message.push('The customer cannot be created successfully');
         statusCode = STATUS_FAILED;
       }
     } catch (err) {
-      messages.push('The customer cannot be created successfully');
-      messages.push(err.message);
+      message.push('The customer cannot be created successfully');
+      message.push(err.message);
       statusCode = STATUS_FAILED;
     } finally {
       return {
-        messages,
+        message,
         data,
         statusCode,
       };
@@ -71,7 +71,7 @@ export class CustomerService {
 
   async getAllCustomers(role: string): Promise<responseInterface> {
     let statusCode = STATUS_SUCCESS,
-      messages = [],
+      message = [],
       data = [];
 
     Logger.log('Customer SERVICE is called');
@@ -83,25 +83,25 @@ export class CustomerService {
       });
       if (isAllowed !== true) {
         statusCode = isAllowed.statusCode;
-        messages = isAllowed.messages;
+        message = isAllowed.message;
         return;
       }
 
       let customers = await this.customerRepository.find({});
       Logger.log(`The customers are fetched successfully`);
-      messages.push('The customers are fetched successfully');
+      message.push('The customers are fetched successfully');
       statusCode = STATUS_SUCCESS;
       data = customers;
     } catch (err) {
       Logger.error('The customers could not be fetched');
       console.log(err);
-      messages.push('The customers could not be fetched');
-      messages.push(err.message);
+      message.push('The customers could not be fetched');
+      message.push(err.message);
       statusCode = STATUS_FAILED;
     } finally {
       return {
         statusCode,
-        messages,
+        message,
         data,
       };
     }
@@ -110,7 +110,7 @@ export class CustomerService {
   async getCustomer(id: number, role: string): Promise<responseInterface> {
     let statusCode = STATUS_SUCCESS,
       data = [],
-      messages = [];
+      message = [];
 
     Logger.log('Customer SERVICE is called');
 
@@ -120,7 +120,7 @@ export class CustomerService {
     });
     if (isAllowed !== true) {
       statusCode = isAllowed.statusCode;
-      messages = isAllowed.messages;
+      message = isAllowed.message;
       return;
     }
 
@@ -129,23 +129,23 @@ export class CustomerService {
       if (customer !== null) {
         data.push(customer);
         statusCode = STATUS_SUCCESS;
-        messages.push('The customer was fetched successfully');
+        message.push('The customer was fetched successfully');
         Logger.log(`The customer with id ${id} is successfully fetched`);
       } else {
         statusCode = STATUS_NOTFOUND;
-        messages.push('The customer was not found');
+        message.push('The customer was not found');
         Logger.warn(`The customer with id ${id} was not found`);
       }
     } catch (err) {
       statusCode = STATUS_FAILED;
       Logger.error('The customer could not be found');
       console.log(err);
-      messages.push('The customers could not be fetched');
-      messages.push(err.message);
+      message.push('The customers could not be fetched');
+      message.push(err.message);
     } finally {
       return {
         statusCode,
-        messages,
+        message,
         data,
       };
     }
@@ -153,7 +153,7 @@ export class CustomerService {
 
   async deleteCustomer(id: number, role: string): Promise<responseInterface> {
     let statusCode = STATUS_SUCCESS,
-      messages = [],
+      message = [],
       data = [];
 
     Logger.log('Customer SERVICE is called');
@@ -165,25 +165,25 @@ export class CustomerService {
       });
       if (isAllowed !== true) {
         statusCode = isAllowed.statusCode;
-        messages = isAllowed.messages;
+        message = isAllowed.message;
         return;
       }
       let res = await this.customerRepository.delete(id);
       if (res.affected > 0) {
-        messages.push('The Customer was successfully deleted');
+        message.push('The Customer was successfully deleted');
         statusCode = STATUS_SUCCESS;
       } else {
-        messages.push('The Customer could not be deleted');
+        message.push('The Customer could not be deleted');
         statusCode = STATUS_FAILED;
       }
     } catch (err) {
-      messages.push('The Customer could not be deleted');
-      messages.push(err.message);
+      message.push('The Customer could not be deleted');
+      message.push(err.message);
       statusCode = STATUS_FAILED;
     } finally {
       return {
         statusCode,
-        messages,
+        message,
         data,
       };
     }
@@ -194,7 +194,7 @@ export class CustomerService {
     body: UpdateCustomerDto,
   ): Promise<responseInterface> {
     let statusCode = STATUS_SUCCESS,
-      messages = [],
+      message = [],
       data = [];
     Logger.log('Customer SERVICE is called');
 
@@ -206,7 +206,7 @@ export class CustomerService {
       });
       if (isAllowed !== true) {
         statusCode = isAllowed.statusCode;
-        messages = isAllowed.messages;
+        message = isAllowed.message;
         return;
       }
       delete body.role;
@@ -216,23 +216,23 @@ export class CustomerService {
         let updatedcustomer = await this.customerRepository.findOneBy({ id });
         data.push(updatedcustomer);
         statusCode = STATUS_SUCCESS;
-        messages.push('The customer is updated successfully');
+        message.push('The customer is updated successfully');
         Logger.log(`The customer with ${id} is updated successfully`);
       } else {
-        messages.push('The customer is not updated successfully');
+        message.push('The customer is not updated successfully');
         Logger.warn('The customer with ${id} is was not found');
         statusCode = STATUS_NOTFOUND;
       }
     } catch (err) {
       Logger.error('Error in updatecustomer method of customerService');
       console.log(err);
-      messages.push('The customer is not updated successfully');
-      messages.push(err.message);
+      message.push('The customer is not updated successfully');
+      message.push(err.message);
       statusCode = STATUS_FAILED;
     } finally {
       return {
         statusCode,
-        messages,
+        message,
         data,
       };
     }
@@ -242,7 +242,7 @@ export class CustomerService {
     email: string,
     role: string,
   ): Promise<responseInterface> {
-    let messages = [],
+    let message = [],
       statusCode = STATUS_SUCCESS,
       data = [];
     try {
@@ -261,7 +261,7 @@ export class CustomerService {
         let Emailres = await sendEmail({ to: customer.email, subject, text });
         if (Emailres !== true && typeof Emailres == 'string')
           throw new Error(Emailres);
-        messages.push(
+        message.push(
           'The otp has been generated successfully, check your email',
         );
         statusCode = STATUS_SUCCESS;
@@ -270,13 +270,13 @@ export class CustomerService {
         throw new Error('The otp was not updated in the database');
       }
     } catch (err) {
-      messages.push('The otp was not generated successfully');
-      messages.push(err.message);
+      message.push('The otp was not generated successfully');
+      message.push(err.message);
       statusCode = STATUS_FAILED;
     } finally {
       return {
         statusCode,
-        messages,
+        message,
         data,
       };
     }

@@ -7,22 +7,22 @@ export class UploadService {
     message: string;
     statusCode: number;
   }) {
-    const { fileName, message, statusCode } = body;
-    let messages = [];
+    const { fileName, message:msg, statusCode } = body;
+    let message = [];
     try {
       if (statusCode !== STATUS_SUCCESS) {
-        throw new Error(message);
-      } else messages.push(message);
+        throw new Error(msg);
+      } else message.push(msg);
       return {
         statusCode,
-        messages,
+        message,
         lisencePhoto: fileName,
       };
     } catch (e) {
-      messages.push('The lisence photo was not uploaded', e.message);
+      message.push('The lisence photo was not uploaded', e.message);
       return {
         statusCode,
-        messages,
+        message,
       };
     }
   }
@@ -32,22 +32,22 @@ export class UploadService {
     message: string;
     statusCode: number;
   }) {
-    const { fileName, message, statusCode } = body;
-    let messages = [];
+    const { fileName, message:msg, statusCode } = body;
+    let message = [];
     try {
       if (statusCode !== STATUS_SUCCESS) {
-        throw new Error(message);
-      } else messages.push(message);
+        throw new Error(msg);
+      } else message.push(message);
       return {
         statusCode,
-        messages,
+        message,
         lisencePhoto: fileName,
       };
     } catch (e) {
-      messages.push('The lisence photo was not uploaded', e.message);
+      message.push('The lisence photo was not uploaded', e.message);
       return {
         statusCode,
-        messages,
+        message,
       };
     }
   }

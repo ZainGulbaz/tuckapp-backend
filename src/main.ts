@@ -10,12 +10,12 @@ async function main() {
     logger: ['error', 'warn', 'log'],
   });
 
+  app.setGlobalPrefix(process.env.GLOBAL_PREFIX);
   app.useStaticAssets(join(__dirname, '..', 'client/uploads/driver/lisence'));
   app.useStaticAssets(join(__dirname, '..', 'client/uploads/driver/truck'));
   app.useStaticAssets(join(__dirname, '..', 'client/uploads/customer'));
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: false }));
-  app.setGlobalPrefix(process.env.GLOBAL_PREFIX);
   app.enableCors();
   await app.listen(process.env.PORT || 3000);
 }

@@ -32,7 +32,7 @@ export class LoginService {
   async driverLogin(body: driverLoginDto) {
     const { phoneNumber, otp } = body;
     let statusCode = STATUS_SUCCESS,
-      messages = [],
+      message = [],
       data = [];
     try {
       let response = await this.driverRepository.findOne({
@@ -44,20 +44,20 @@ export class LoginService {
         let token = generateToken(response.id, roleEnums.driver, phoneNumber);
         delete response.otp;
         data.push({ ...response, token });
-        messages.push('The login was successful');
+        message.push('The login was successful');
         statusCode = STATUS_SUCCESS;
       } else {
-        messages.push('The login was not successful');
+        message.push('The login was not successful');
         statusCode = STATUS_FAILED;
       }
     } catch (err) {
       console.log(err);
-      messages.push('The login was not successful');
-      messages.push(err.message);
+      message.push('The login was not successful');
+      message.push(err.message);
       statusCode = STATUS_FAILED;
     } finally {
       return {
-        messages,
+        message,
         statusCode,
         data,
       };
@@ -66,7 +66,7 @@ export class LoginService {
 
   async adminLogin(body: adminLoginDto): Promise<responseInterface> {
     const { username, password } = body;
-    let messages = [],
+    let message = [],
       data = [],
       statusCode = STATUS_SUCCESS;
     try {
@@ -74,7 +74,7 @@ export class LoginService {
       if (res) {
         const { password: databasePassword } = res;
         if (compareSync(password, databasePassword)) {
-          messages.push('The user is successfully logged in');
+          message.push('The user is successfully logged in');
           let token = generateToken(res.id, roleEnums.admin, body.username);
           let admin = await this.adminRepository.findOne({
             where: [{ username }],
@@ -82,20 +82,20 @@ export class LoginService {
           delete admin.password;
           data = [{ ...admin, token }];
         } else {
-          messages.push('The password for this username is incorrect');
+          message.push('The password for this username is incorrect');
           statusCode = STATUS_UNAUTHORIZED;
         }
       } else {
-        messages.push('The user cannot login successfully');
+        message.push('The user cannot login successfully');
         statusCode = STATUS_UNAUTHORIZED;
       }
     } catch (error) {
-      messages.push('The user cannot login successfully');
-      messages.push(error.message);
+      message.push('The user cannot login successfully');
+      message.push(error.message);
       console.log(error);
     } finally {
       return {
-        messages,
+        message,
         data,
         statusCode,
       };
@@ -105,7 +105,7 @@ export class LoginService {
   async customerLogin(body: customerLoginDto) {
     const { email, otp } = body;
     let statusCode = STATUS_SUCCESS,
-      messages = [],
+      message = [],
       data = [];
     try {
       let response = await this.customerRepository.findOne({
@@ -115,19 +115,19 @@ export class LoginService {
         let token = generateToken(response.id, roleEnums.customer, email);
         delete response.otp;
         data.push({ ...response, token });
-        messages.push('The login was successful');
+        message.push('The login was successful');
         statusCode = STATUS_SUCCESS;
       } else {
         throw new Error('The otp is incorrect');
       }
     } catch (err) {
       console.log(err);
-      messages.push('The login was not successful');
-      messages.push(err.message);
+      message.push('The login was not successful');
+      message.push(err.message);
       statusCode = STATUS_FAILED;
     } finally {
       return {
-        messages,
+        message,
         statusCode,
         data,
       };

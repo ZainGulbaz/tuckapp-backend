@@ -19,7 +19,7 @@ export class AppService {
 
   async generateOtp(id: number, role: string): Promise<responseInterface> {
     let statusCode = STATUS_SUCCESS,
-      messages = [],
+      message = [],
       data = [];
 
     try {
@@ -29,7 +29,7 @@ export class AppService {
       });
       if (isAllowed !== true) {
         statusCode = isAllowed.statusCode;
-        messages.push(isAllowed.messages);
+        message.push(isAllowed.message);
         return;
       }
 
@@ -40,20 +40,20 @@ export class AppService {
       if (res.affected > 0) {
         let driver = await this.driverRepository.findOne({ where: [{ id }] });
         data = [{ ...driver, otp }];
-        messages.push('The otp has been successfully generated');
+        message.push('The otp has been successfully generated');
       } else {
-        messages.push('The otp could not be generated');
+        message.push('The otp could not be generated');
         statusCode = STATUS_FAILED;
       }
     } catch (err) {
-      messages.push('The otp could not be generated');
-      messages.push(err.message);
+      message.push('The otp could not be generated');
+      message.push(err.message);
       statusCode = STATUS_FAILED;
     } finally {
       return {
         statusCode,
         data,
-        messages,
+        message,
       };
     }
   }

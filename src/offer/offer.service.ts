@@ -29,7 +29,7 @@ export class OfferService {
     @InjectRepository(Driver) private driverRepository: Repository<Driver>,
   ) {}
   async createOffer(body: CreateOfferDto): Promise<responseInterface> {
-    let messages = [],
+    let message = [],
       data = [],
       statusCode = STATUS_SUCCESS;
     try {
@@ -41,7 +41,7 @@ export class OfferService {
       });
       if (isAllowed !== true) {
         statusCode = isAllowed.statusCode;
-        messages = isAllowed.messages;
+        message = isAllowed.message;
         return;
       }
 
@@ -63,19 +63,19 @@ export class OfferService {
         //    body.rideId,
         //   body.amount,
         // );
-        messages.push('The offer is successfully send to the customer');
-        //messages.push(notificationResMessage);
+        message.push('The offer is successfully send to the customer');
+        //message.push(notificationResMessage);
         statusCode = STATUS_SUCCESS;
       } else {
         throw new Error('Error in creating offer');
       }
     } catch (err) {
-      messages.push('The offer cannot be sent to the customer');
-      messages.push(err.message);
+      message.push('The offer cannot be sent to the customer');
+      message.push(err.message);
       statusCode = STATUS_FAILED;
     } finally {
       return {
-        messages,
+        message,
         statusCode,
         data,
       };
@@ -88,7 +88,7 @@ export class OfferService {
     authId: number,
   ): Promise<responseInterface> {
     let statusCode = STATUS_SUCCESS,
-      messages = [],
+      message = [],
       data = [];
     try {
       let isAllowed = verifyRoleAccess({
@@ -97,7 +97,7 @@ export class OfferService {
       });
       if (isAllowed !== true) {
         statusCode = isAllowed.statusCode;
-        messages = isAllowed.messages;
+        message = isAllowed.message;
         return;
       }
       let ride = await this.rideRepository.findOne({ where: [{ id: rideId }] });
@@ -109,17 +109,17 @@ export class OfferService {
       let offers = await this.offerRepository.query(
         `SELECT off.id as id,(Select CONCAT('[',GROUP_CONCAT(DISTINCT(JSON_OBJECT(ct.id,ct.name))),']') from ride rd LEFT JOIN ride_category rc ON rc.rideId=rd.id LEFT JOIN category ct ON ct.id=rc.categoryId WHERE rd.id=${rideId} GROUP BY rd.id Limit 1) rideCategories,JSON_OBJECT(ct.id,ct.name) driverCategory,(Select CONCAT('[',GROUP_CONCAT(DISTINCT(JSON_OBJECT(sr.id,sr.name))),']') from ride rd LEFT JOIN ride_service rs ON rd.id=rs.rideId LEFT JOIN service sr ON sr.id=rs.serviceId WHERE rd.id=${rideId} Group by rd.id Limit 1) rideServices , CONCAT('[',GROUP_CONCAT(DISTINCT(JSON_OBJECT(sr.id,sr.name))),']') driverServices ,off.driverId, off.rideId,off.amount,off.expiryTime,CONCAT(dr.firstName," ",dr.lastName) name,dr.lisencePlate, dr.truckPhoto FROM offer off JOIN driver dr ON off.driverId=dr.id LEFT JOIN category ct ON ct.id=dr.categoryId LEFT JOIN driver_service drs ON drs.driverId=dr.id LEFT JOIN service sr ON sr.id=drs.serviceId WHERE off.rideId=${rideId} AND isCancel=0 AND expiryTime>${new Date().getTime()}  GROUP BY off.id`,
       );
-      messages.push('The offers are fetched successfully.');
+      message.push('The offers are fetched successfully.');
       statusCode = STATUS_SUCCESS;
       data = offers;
     } catch (err) {
-      messages.push('Unable to fetch offers');
-      messages.push(err.message);
+      message.push('Unable to fetch offers');
+      message.push(err.message);
       statusCode = STATUS_FAILED;
     } finally {
       return {
         statusCode,
-        messages,
+        message,
         data,
       };
     }
@@ -127,7 +127,7 @@ export class OfferService {
 
   async acceptOffer(body: AcceptOfferDto) {
     let statusCode = STATUS_SUCCESS,
-      messages = [],
+      message = [],
       data = [];
 
     try {
@@ -137,7 +137,7 @@ export class OfferService {
       });
       if (isAllowed !== true) {
         statusCode = isAllowed.statusCode;
-        messages = isAllowed.messages;
+        message = isAllowed.message;
         return;
       }
 
@@ -191,28 +191,28 @@ export class OfferService {
         //   customerName: customer.firstName + ' ' + customer.lastName,
         //   driverName: driver.firstName + ' ' + driver.lastName,
         // });
-        messages.push('The offer has been accepted successfully');
-        messages.push('The ride has been updated successfully');
-        // messages.push(notifyResponseMessage);
+        message.push('The offer has been accepted successfully');
+        message.push('The ride has been updated successfully');
+        // message.push(notifyResponseMessage);
         statusCode = STATUS_SUCCESS;
       } else {
         throw new Error('Could not find the offer for given offerId');
       }
     } catch (err) {
-      messages.push('The offer was not accepted successfully');
-      messages.push(err.message);
+      message.push('The offer was not accepted successfully');
+      message.push(err.message);
       statusCode = STATUS_FAILED;
     } finally {
       return {
         statusCode,
-        messages,
+        message,
         data,
       };
     }
   }
 
   async cancelOffer(offerId: number, role: string): Promise<responseInterface> {
-    let messages = [],
+    let message = [],
       statusCode = STATUS_SUCCESS,
       data = [];
     try {
@@ -222,7 +222,7 @@ export class OfferService {
       });
       if (isAllowed !== true) {
         statusCode = isAllowed.statusCode;
-        messages = isAllowed.messages;
+        message = isAllowed.message;
         return;
       }
       let [offer] = await this.offerRepository.query(
@@ -244,18 +244,18 @@ export class OfferService {
           driver.oneSignalToken,
           offer.customerName,
         );
-        messages.push('The offer is canceled successfully');
-        messages.push(notificationResponse);
+        message.push('The offer is canceled successfully');
+        message.push(notificationResponse);
         statusCode = STATUS_SUCCESS;
       } else throw new Error('The offer with this offerId does not exist');
     } catch (err) {
-      messages.push('The offer cannot be canceled successfully');
-      messages.push(err.message);
+      message.push('The offer cannot be canceled successfully');
+      message.push(err.message);
       statusCode = STATUS_FAILED;
     } finally {
       return {
         statusCode,
-        messages,
+        message,
         data,
       };
     }
@@ -266,7 +266,7 @@ export class OfferService {
     role: string,
   ): Promise<responseInterface> {
     let statusCode = STATUS_SUCCESS,
-      messages = [],
+      message = [],
       data = [];
     try {
       let isAllowed = verifyRoleAccess({
@@ -275,7 +275,7 @@ export class OfferService {
       });
       if (isAllowed !== true) {
         statusCode = isAllowed.statusCode;
-        messages = isAllowed.messages;
+        message = isAllowed.message;
         return;
       }
       let canceledOffer = await this.offerRepository.query(
@@ -284,22 +284,22 @@ export class OfferService {
       if (canceledOffer.length !== 0 && canceledOffer[0]["isNotified"]==0) {
         [data] = canceledOffer;
         await this.offerRepository.update(data["id"], { isNotified: 1 });
-        messages.push('The latest canceled offer has been found');
+        message.push('The latest canceled offer has been found');
         statusCode = STATUS_SUCCESS;
       } else {
-        messages.push('There are no latest canceled offers found');
+        message.push('There are no latest canceled offers found');
         statusCode = STATUS_NOTFOUND;
         data = [];
       }
     } catch (err) {
       console.log(err);
-      messages.push('The latest canceled offer cannot be found successfully');
+      message.push('The latest canceled offer cannot be found successfully');
       data = [];
       statusCode = STATUS_FAILED;
     } finally {
       return {
         statusCode,
-        messages,
+        message,
         data,
       };
     }

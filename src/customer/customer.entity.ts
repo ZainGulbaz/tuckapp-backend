@@ -15,7 +15,7 @@ export class Customer {
   @Column({ nullable: false, unique: true })
   email: string;
 
-  @Column({ nullable: false, unique: true })
+  @Column({ nullable: true, unique: true })
   phoneNumber: string;
 
   @Column({ nullable: false })
@@ -24,7 +24,7 @@ export class Customer {
   @Column({ nullable: false })
   city: string;
 
-  @Column({ nullable: false })
+  @Column({ nullable: true })
   gender: string;
 
   @Column({ nullable: true, default: 0 })

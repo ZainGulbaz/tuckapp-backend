@@ -23,7 +23,7 @@ export class TransactionService {
   async createTransaction(
     body: CreateTransactionDto,
   ): Promise<responseInterface> {
-    let messages = [],
+    let message = [],
       statusCode = STATUS_SUCCESS,
       data = [],
       role = '';
@@ -34,7 +34,7 @@ export class TransactionService {
       });
       if (isAllowed !== true) {
         statusCode = isAllowed.statusCode;
-        messages = isAllowed.messages;
+        message = isAllowed.message;
         return;
       }
 
@@ -51,7 +51,7 @@ export class TransactionService {
             id: body.driverId,
             driverExpiry: body.driverExpiry,
           });
-        messages.push('The transaction was successfull');
+        message.push('The transaction was successfull');
         statusCode = STATUS_SUCCESS;
         data.push({ transactionId: transaction.identifiers[0].id });
       } else {
@@ -59,20 +59,20 @@ export class TransactionService {
       }
     } catch (err) {
       console.error(err);
-      messages.push('The transaction was not created successfully');
-      messages.push(err.message);
+      message.push('The transaction was not created successfully');
+      message.push(err.message);
       statusCode = STATUS_FAILED;
     } finally {
       return {
         statusCode,
-        messages,
+        message,
         data,
       };
     }
   }
 
   async getAdminTransactions(role: string): Promise<responseInterface> {
-    let messages = [],
+    let message = [],
       statusCode = STATUS_SUCCESS,
       data = [];
     try {
@@ -82,7 +82,7 @@ export class TransactionService {
       });
       if (isAllowed !== true) {
         statusCode = isAllowed.statusCode;
-        messages = isAllowed.messages;
+        message = isAllowed.message;
         return;
       }
 
@@ -90,17 +90,17 @@ export class TransactionService {
         'SELECT tx.id id,dr.id driverId,tx.amount amount, tx.time time,dr.firstName firstName, dr.lastName lastName, dr.phoneNumber phoneNumber, dr.city city, dr.country country, tx.expiryDate FROM transaction tx JOIN driver dr ON dr.id=tx.driverId ORDER BY tx.time desc ',
       );
 
-      messages.push('The Admin Transactions are successfully fetched');
+      message.push('The Admin Transactions are successfully fetched');
       statusCode = STATUS_SUCCESS;
       data = transactions;
     } catch (err) {
       console.log(err);
-      messages.push('The Admin Transactions was not fetched');
-      messages.push(err.message);
+      message.push('The Admin Transactions was not fetched');
+      message.push(err.message);
       statusCode = STATUS_FAILED;
     } finally {
       return {
-        messages,
+        message,
         statusCode,
         data,
       };
@@ -108,7 +108,7 @@ export class TransactionService {
   }
 
   async getDriverTransactions(role: string): Promise<responseInterface> {
-    let messages = [],
+    let message = [],
       statusCode = STATUS_SUCCESS,
       data = [];
     try {
@@ -118,7 +118,7 @@ export class TransactionService {
       });
       if (isAllowed !== true) {
         statusCode = isAllowed.statusCode;
-        messages = isAllowed.messages;
+        message = isAllowed.message;
         return;
       }
 
@@ -126,17 +126,17 @@ export class TransactionService {
         'SELECT tx.id id,cu.id customerId,tx.rideId rideId,dr.id driverId ,tx.amount amount, tx.time time,cu.firstName customerFirstName, cu.lastName customerLastName, cu.phoneNumber customerPhoneNumber,dr.phoneNumber driverPhoneNumber,dr.firstName driverFirstName, dr.lastName driverLastName  FROM transaction tx JOIN customer cu ON cu.id=tx.customerId JOIN driver dr ON dr.id=tx.driverId ORDER BY tx.time desc',
       );
 
-      messages.push('The Driver Transactions are successfully fetched');
+      message.push('The Driver Transactions are successfully fetched');
       statusCode = STATUS_SUCCESS;
       data = transactions;
     } catch (err) {
       console.log(err);
-      messages.push('The Driver Transactions was not fetched');
-      messages.push(err.message);
+      message.push('The Driver Transactions was not fetched');
+      message.push(err.message);
       statusCode = STATUS_FAILED;
     } finally {
       return {
-        messages,
+        message,
         statusCode,
         data,
       };

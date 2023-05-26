@@ -41,7 +41,7 @@ export class RideService {
   ) {}
 
   async createRide(@Body() body: CreateRideDto): Promise<responseInterface> {
-    let messages = [],
+    let message = [],
       statusCode = STATUS_SUCCESS,
       data = [];
     try {
@@ -51,7 +51,7 @@ export class RideService {
       });
       if (isAllowed !== true) {
         statusCode = isAllowed.statusCode;
-        messages = isAllowed.messages;
+        message = isAllowed.message;
         return;
       }
 
@@ -110,8 +110,8 @@ export class RideService {
             services,
           );
 
-        messages[0] = 'The ride has been created successfully';
-        messages[1] = responseMessage;
+        message[0] = 'The ride has been created successfully';
+        message[1] = responseMessage;
         statusCode = STATUS_SUCCESS;
         return;
       } else {
@@ -119,12 +119,12 @@ export class RideService {
       }
     } catch (err) {
       console.log(err);
-      messages.push('The ride cannot be started');
-      messages.push(err.message);
+      message.push('The ride cannot be started');
+      message.push(err.message);
       statusCode = STATUS_FAILED;
     } finally {
       return {
-        messages,
+        message,
         statusCode,
         data,
       };
@@ -135,7 +135,7 @@ export class RideService {
     id: number,
     body: UpdateRideDto,
   ): Promise<responseInterface> {
-    let messages = [],
+    let message = [],
       statusCode = STATUS_SUCCESS,
       data = [];
     try {
@@ -145,7 +145,7 @@ export class RideService {
       });
       if (isAllowed !== true) {
         statusCode = isAllowed.statusCode;
-        messages = isAllowed.messages;
+        message = isAllowed.message;
         return;
       }
 
@@ -170,7 +170,7 @@ export class RideService {
           rideId: ride.id,
         });
         if (rideTransactionId) {
-          messages[1] = 'The transaction has already been created successfully';
+          message[1] = 'The transaction has already been created successfully';
         } else {
           throw new Error('Unable to register the transaction for the ride');
         }
@@ -183,28 +183,28 @@ export class RideService {
       if (updatedRide.affected == 1) {
         ride.endTime = new Date().getTime();
         ride.transactionId = rideTransactionId;
-        messages[0] = 'The ride has been completed succesfully';
+        message[0] = 'The ride has been completed succesfully';
         let notificationResponse =
           await this.pushNotifyService.notifyRideCompletion({
             driverId: ride.driverId,
             customerId: ride.customerId,
             amount: ride.amount,
           });
-        messages[1] = notificationResponse;
+        message[1] = notificationResponse;
         statusCode = STATUS_SUCCESS;
         data = [{ ...ride, transactionId: rideTransactionId }];
         return;
       } else {
-        messages.push('The ride was not completed succesfully');
+        message.push('The ride was not completed succesfully');
         statusCode = STATUS_FAILED;
         return;
       }
     } catch (err) {
-      messages.push('The ride was not completed succesfully');
-      messages.push(err.message);
+      message.push('The ride was not completed succesfully');
+      message.push(err.message);
       statusCode = STATUS_FAILED;
     } finally {
-      return { messages, statusCode, data };
+      return { message, statusCode, data };
     }
   }
 
@@ -214,7 +214,7 @@ export class RideService {
     authId: number,
   ): Promise<responseInterface> {
     let statusCode = STATUS_SUCCESS,
-      messages = [],
+      message = [],
       data = [];
 
     try {
@@ -224,7 +224,7 @@ export class RideService {
       });
       if (isAllowed !== true) {
         statusCode = isAllowed.statusCode;
-        messages = isAllowed.messages;
+        message = isAllowed.message;
         return;
       }
 
@@ -243,12 +243,12 @@ export class RideService {
       let availableRides = await this.rideRepository.query(query);
       if (availableRides.length > 0) {
         statusCode = STATUS_SUCCESS;
-        messages.push('The rides are fetched successfully');
+        message.push('The rides are fetched successfully');
         data.push(...availableRides);
         return;
       } else {
         statusCode = STATUS_NOTFOUND;
-        messages.push(
+        message.push(
           `There no rides available at a radius of ${(
             parseInt(radius) / 1000
           ).toFixed(1)} km right now`,
@@ -257,12 +257,12 @@ export class RideService {
       }
     } catch (err) {
       console.log(err);
-      messages.push('There are no rides available yet');
-      messages.push(err.message);
+      message.push('There are no rides available yet');
+      message.push(err.message);
       statusCode = STATUS_FAILED;
     } finally {
       return {
-        messages,
+        message,
         statusCode,
         data,
       };
@@ -275,7 +275,7 @@ export class RideService {
     role: string,
   ): Promise<responseInterface> {
     let statusCode = STATUS_SUCCESS,
-      messages = [],
+      message = [],
       data = [];
     try {
       let isAllowed = verifyRoleAccess({
@@ -284,7 +284,7 @@ export class RideService {
       });
       if (isAllowed !== true) {
         statusCode = isAllowed.statusCode;
-        messages = isAllowed.messages;
+        message = isAllowed.message;
         return;
       }
 
@@ -316,7 +316,7 @@ export class RideService {
         });
         if (driverResponse.affected < 1)
           throw new Error('The driver was not updated successfully');
-        messages.push('The ride has been assigned to you');
+        message.push('The ride has been assigned to you');
         data.push({ ...ride, driverId });
         return;
       } else {
@@ -324,12 +324,12 @@ export class RideService {
       }
     } catch (err) {
       statusCode = STATUS_FAILED;
-      messages.push('The ride cannot be assigned successfully');
-      messages.push(err.message);
+      message.push('The ride cannot be assigned successfully');
+      message.push(err.message);
     } finally {
       return {
         statusCode,
-        messages,
+        message,
         data,
       };
     }
@@ -337,7 +337,7 @@ export class RideService {
 
   async getAllRides(role: string): Promise<responseInterface> {
     let statusCode = STATUS_SUCCESS,
-      messages = [],
+      message = [],
       data = [];
     try {
       let isAllowed = verifyRoleAccess({
@@ -346,7 +346,7 @@ export class RideService {
       });
       if (isAllowed !== true) {
         statusCode = isAllowed.statusCode;
-        messages = isAllowed.messages;
+        message = isAllowed.message;
         return;
       }
 
@@ -354,17 +354,17 @@ export class RideService {
         'SELECT r.id,CONCAT(cu.firstName," ",cu.lastName)customerName,CONCAT(dr.firstName,"",dr.lastName)driverName,cu.phoneNumber customerPhoneNumber, dr.phoneNumber driverPhoneNumber, r.city city ,startTime,endTime,tx.amount FROM ride r JOIN driver dr ON r.driverId = dr.id JOIN customer cu ON r.customerId = cu.id join transaction tx ON r.transactionId = tx.id',
       );
       data = rides;
-      messages.push('The rides are fetched successfully');
+      message.push('The rides are fetched successfully');
       statusCode = STATUS_SUCCESS;
     } catch (err) {
       console.log(err);
-      messages.push('The rides are not fetched');
-      messages.push(err.message);
+      message.push('The rides are not fetched');
+      message.push(err.message);
       statusCode = STATUS_FAILED;
     } finally {
       return {
         statusCode,
-        messages,
+        message,
         data,
       };
     }
@@ -379,7 +379,7 @@ export class RideService {
       if (isAllowed !== true) {
         return {
           statusCode: isAllowed.statusCode,
-          messages: isAllowed.messages,
+          message: isAllowed.message,
           data: [],
         };
       }
@@ -389,7 +389,7 @@ export class RideService {
         return await this.getDriverCurrentRide(id);
     } catch (err) {
       return {
-        messages: ['Error in getting current ride', err.message],
+        message: ['Error in getting current ride', err.message],
         statusCode: STATUS_FAILED,
         data: [],
       };
@@ -398,7 +398,7 @@ export class RideService {
 
   async getDriverCurrentRide(driverId: number) {
     let statusCode = STATUS_SUCCESS,
-      messages = [],
+      message = [],
       data = [];
     try {
       let driverCurrentRide = await this.driverRepository.findOne({
@@ -413,16 +413,16 @@ export class RideService {
         throw new Error('Error in getting ride for the specific driver');
       data = [currentRide];
       statusCode = STATUS_SUCCESS;
-      messages.push('The current ride of the driver is successfully fetched');
+      message.push('The current ride of the driver is successfully fetched');
     } catch (err) {
       console.log(err);
-      messages.push('The current ride of the driver is not fetched');
-      messages.push(err.message);
+      message.push('The current ride of the driver is not fetched');
+      message.push(err.message);
       statusCode = STATUS_FAILED;
     } finally {
       return {
         statusCode,
-        messages,
+        message,
         data,
       };
     }
@@ -430,7 +430,7 @@ export class RideService {
 
   async getCustomerCurrentRide(customerId: number): Promise<responseInterface> {
     let statusCode = STATUS_SUCCESS,
-      messages = [],
+      message = [],
       data = [];
     try {
       let rides = await this.rideRepository.query(
@@ -443,16 +443,16 @@ export class RideService {
 
       data = rides;
       statusCode = STATUS_SUCCESS;
-      messages.push('The ride has been fetched successfully');
+      message.push('The ride has been fetched successfully');
     } catch (err) {
-      messages.push('The customer ride is not fetched successfully');
-      messages.push(err.message);
+      message.push('The customer ride is not fetched successfully');
+      message.push(err.message);
       statusCode = STATUS_FAILED;
       data = [];
     } finally {
       return {
         statusCode,
-        messages,
+        message,
         data,
       };
     }
@@ -461,7 +461,7 @@ export class RideService {
   async cancelRide(rideId: number, role: string): Promise<responseInterface> {
     let statusCode = STATUS_SUCCESS,
       data = [],
-      messages = [];
+      message = [];
     try {
       let isAllowed = verifyRoleAccess({
         role: role,
@@ -469,7 +469,7 @@ export class RideService {
       });
       if (isAllowed !== true) {
         statusCode = isAllowed.statusCode;
-        messages = isAllowed.messages;
+        message = isAllowed.message;
         return;
       }
 
@@ -477,12 +477,12 @@ export class RideService {
 
       if(ride==null) throw new Error("There is no ride with id in the database");
       else if(ride.isCancel==1){
-        messages.push("The ride is already cancelled");
+        message.push("The ride is already cancelled");
         statusCode=STATUS_FAILED;
         return;
       }
       else if(ride.endTime){
-        messages.push("The ride is already completed");
+        message.push("The ride is already completed");
         statusCode=STATUS_FAILED;
         return;
       }
@@ -492,19 +492,19 @@ export class RideService {
       });
       if (canceledRide.affected > 0) {
         await this.driverRepository.query(`UPDATE driver SET onRide=0 where onRide=${rideId}`);
-        messages.push('The ride has been canceled successfully');
+        message.push('The ride has been canceled successfully');
         statusCode = STATUS_SUCCESS;
         return;
       }
       throw new Error('The ride is not updated in the database');
     } catch (err) {
-      messages = ['The ride is not canceled successfully', err.message];
+      message = ['The ride is not canceled successfully', err.message];
       statusCode = STATUS_FAILED;
     } finally {
       return {
         statusCode,
         data,
-        messages,
+        message,
       };
     }
   }

@@ -20,7 +20,7 @@ export function verifyRoleAccess(data: {
 }): responseInterface | true {
   let responseObj: responseInterface | true = {
     data: [],
-    messages: [],
+    message: [],
     statusCode: 0,
   };
 
@@ -31,18 +31,18 @@ export function verifyRoleAccess(data: {
         return;
       } else {
         responseObj.statusCode = STATUS_UNAUTHORIZED;
-        responseObj.messages.push('You are not authorized for this request');
+        responseObj.message.push('You are not authorized for this request');
         responseObj.data = [];
       }
     } else {
       responseObj.statusCode = STATUS_FAILED;
-      responseObj.messages.push('We are unable to serve this request');
+      responseObj.message.push('We are unable to serve this request');
       responseObj.data = [];
     }
   } catch (err) {
     responseObj = {
       statusCode: STATUS_FAILED,
-      messages: ['We are unable to server this request'],
+      message: ['We are unable to server this request'],
       data: [],
     };
   } finally {

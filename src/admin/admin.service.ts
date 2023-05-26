@@ -12,7 +12,7 @@ export class AdminService {
     @InjectRepository(Admin) private adminRepository: Repository<Admin>,
   ) {}
   async createAdmin(@Body() body: adminCreateDto): Promise<responseInterface> {
-    let messages = [],
+    let message = [],
       data = [],
       statusCode = STATUS_SUCCESS;
     try {
@@ -24,19 +24,19 @@ export class AdminService {
       if (res.raw.insertId > 0) {
         delete body.password;
         data.push({ ...body, id: res.raw.insertId });
-        messages.push('The admin is created successfully');
+        message.push('The admin is created successfully');
       } else {
-        messages.push('The admin cannot be created successfully');
+        message.push('The admin cannot be created successfully');
         statusCode = STATUS_FAILED;
       }
     } catch (error) {
-      messages.push('The admin cannot be created successfully');
-      messages.push(error.message);
+      message.push('The admin cannot be created successfully');
+      message.push(error.message);
       statusCode = STATUS_FAILED;
       console.log(error);
     } finally {
       return {
-        messages,
+        message,
         data,
         statusCode,
       };

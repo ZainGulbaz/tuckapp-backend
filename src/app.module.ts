@@ -40,6 +40,7 @@ import { OfferModule } from './offer/offer.module';
 import { ServicesModule } from './services/services.module';
 import { CategoryModule } from './category/category.module';
 
+
 let databaseCredentials = JSON.parse(
   process.env['DATABASE_' + process.env.NODE_ENV],
 );
@@ -77,6 +78,7 @@ let databaseCredentials = JSON.parse(
     OfferModule,
     ServicesModule,
     CategoryModule,
+
   ],
   controllers: [AppController],
   providers: [AppService, LoggerService, DriverService],

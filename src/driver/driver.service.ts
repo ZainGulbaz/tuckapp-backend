@@ -27,7 +27,7 @@ export class DriverService {
   ) {}
 
   async createDriver(body: createDriverDto): Promise<responseInterface> {
-    let messages = [],
+    let message = [],
       statusCode = STATUS_SUCCESS,
       data = [];
 
@@ -59,30 +59,30 @@ export class DriverService {
         Logger.log(
           `The request to register the driver is submitted successfully with id "${res.raw.insertId}"`,
         );
-        messages.push(
+        message.push(
           'The request to register the driver is submitted successfully',
         );
       } else {
         Logger.log('The request to register the driver is failed');
-        messages.push('The request to register the driver is failed to submit');
+        message.push('The request to register the driver is failed to submit');
         statusCode = STATUS_FAILED;
       }
     } catch (err) {
       if (err.code == 'ER_DUP_ENTRY')
-        messages.push(
+        message.push(
           'The driver with this phone number/lisence plate is already registered',
         );
       else
-        messages.push('The request to register the driver is failed to submit');
+        message.push('The request to register the driver is failed to submit');
 
       Logger.error('Error in createDriver method of Driver Service');
       console.log(err);
-      messages.push(err.message);
+      message.push(err.message);
       statusCode = STATUS_FAILED;
     } finally {
       return {
         statusCode,
-        messages,
+        message,
         data,
       };
     }
@@ -90,7 +90,7 @@ export class DriverService {
 
   async getAllDrivers(role: string): Promise<responseInterface> {
     let statusCode = STATUS_SUCCESS,
-      messages = [],
+      message = [],
       data = [];
 
     Logger.log('DRIVER SERVICE is called');
@@ -102,7 +102,7 @@ export class DriverService {
       });
       if (isAllowed !== true) {
         statusCode = isAllowed.statusCode;
-        messages = isAllowed.messages;
+        message = isAllowed.message;
         return;
       }
 
@@ -126,19 +126,19 @@ export class DriverService {
         },
       });
       Logger.log(`The drivers are fetched successfully`);
-      messages.push('The drivers are fetched successfully');
+      message.push('The drivers are fetched successfully');
       statusCode = STATUS_SUCCESS;
       data = drivers;
     } catch (err) {
       Logger.error('The drivers could not be fetched');
       console.log(err);
-      messages.push('The drivers could not be fetched');
-      messages.push(err.message);
+      message.push('The drivers could not be fetched');
+      message.push(err.message);
       statusCode = STATUS_FAILED;
     } finally {
       return {
         statusCode,
-        messages,
+        message,
         data,
       };
     }
@@ -151,7 +151,7 @@ export class DriverService {
   ): Promise<responseInterface> {
     let statusCode = STATUS_SUCCESS,
       data = [],
-      messages = [];
+      message = [];
 
     Logger.log('DRIVER SERVICE is called');
 
@@ -162,7 +162,7 @@ export class DriverService {
       });
       if (isAllowed !== true) {
         statusCode = isAllowed.statusCode;
-        messages = isAllowed.messages;
+        message = isAllowed.message;
         return;
       }
 
@@ -196,23 +196,23 @@ export class DriverService {
         delete driver.otp;
         data.push(driver);
         statusCode = STATUS_SUCCESS;
-        messages.push('The driver was fetched successfully');
+        message.push('The driver was fetched successfully');
         Logger.log(`The driver with id ${id} is successfully fetched`);
       } else {
         statusCode = STATUS_NOTFOUND;
-        messages.push('The driver was not found');
+        message.push('The driver was not found');
         Logger.warn(`The driver with id ${id} was not found`);
       }
     } catch (err) {
       statusCode = STATUS_FAILED;
       Logger.error('The driver could not be found');
       console.log(err);
-      messages.push('The drivers could not be fetched');
-      messages.push(err.message);
+      message.push('The drivers could not be fetched');
+      message.push(err.message);
     } finally {
       return {
         statusCode,
-        messages,
+        message,
         data,
       };
     }
@@ -220,7 +220,7 @@ export class DriverService {
 
   async deleteDriver(id: number, role: string): Promise<responseInterface> {
     let statusCode = STATUS_SUCCESS,
-      messages = [],
+      message = [],
       data = [];
 
     Logger.log('DRIVER SERVICE is called');
@@ -232,25 +232,25 @@ export class DriverService {
       });
       if (isAllowed !== true) {
         statusCode = isAllowed.statusCode;
-        messages = isAllowed.messages;
+        message = isAllowed.message;
         return;
       }
       let res = await this.driverRepository.delete(id);
       if (res.affected > 0) {
-        messages.push('The driver was successfully deleted');
+        message.push('The driver was successfully deleted');
         statusCode = STATUS_SUCCESS;
       } else {
-        messages.push('The driver could not be deleted');
+        message.push('The driver could not be deleted');
         statusCode = STATUS_FAILED;
       }
     } catch (err) {
-      messages.push('The driver could not be deleted');
-      messages.push(err.message);
+      message.push('The driver could not be deleted');
+      message.push(err.message);
       statusCode = STATUS_FAILED;
     } finally {
       return {
         statusCode,
-        messages,
+        message,
         data,
       };
     }
@@ -261,7 +261,7 @@ export class DriverService {
     body: updateDriverDto,
   ): Promise<responseInterface> {
     let statusCode = STATUS_SUCCESS,
-      messages = [],
+      message = [],
       data = [];
 
     Logger.log('DRIVER SERVICE is called');
@@ -273,7 +273,7 @@ export class DriverService {
       });
       if (isAllowed !== true) {
         statusCode = isAllowed.statusCode;
-        messages = isAllowed.messages;
+        message = isAllowed.message;
         return;
       }
       delete body.role;
@@ -284,23 +284,23 @@ export class DriverService {
         delete updatedDriver.otp;
         data.push(updatedDriver);
         statusCode = STATUS_SUCCESS;
-        messages.push('The driver is updated successfully');
+        message.push('The driver is updated successfully');
         Logger.log(`The driver with ${id} is updated successfully`);
       } else {
-        messages.push('The driver is not updated successfully');
+        message.push('The driver is not updated successfully');
         Logger.warn(`The driver with ${id} is was not found`);
         statusCode = STATUS_NOTFOUND;
       }
     } catch (err) {
       Logger.error('Error in updateDriver method of DriverService');
       console.log(err);
-      messages.push('The driver is not updated successfully');
-      messages.push(err.message);
+      message.push('The driver is not updated successfully');
+      message.push(err.message);
       statusCode = STATUS_FAILED;
     } finally {
       return {
         statusCode,
-        messages,
+        message,
         data,
       };
     }
@@ -327,7 +327,7 @@ export class DriverService {
   ): Promise<responseInterface> {
     let statusCode = STATUS_SUCCESS,
       data = [],
-      messages = [];
+      message = [];
     try {
       let updateCoordinates = await this.driverRepository.update(driverId, {
         currentCoordinates: coordinates,
@@ -335,17 +335,17 @@ export class DriverService {
       if (updateCoordinates.affected !== 1) {
         throw new Error('The drivers current location is not updated');
       }
-      messages.push('The driver current location is updated successfully');
+      message.push('The driver current location is updated successfully');
       statusCode = STATUS_SUCCESS;
     } catch (err) {
-      messages.push('The drivers current location is not updated');
-      messages.push(err.message);
+      message.push('The drivers current location is not updated');
+      message.push(err.message);
       statusCode = STATUS_FAILED;
     } finally {
       return {
         statusCode,
         data,
-        messages,
+        message,
       };
     }
   }
@@ -356,7 +356,7 @@ export class DriverService {
   ): Promise<responseInterface> {
     let statusCode = STATUS_SUCCESS,
       data = [],
-      messages = [];
+      message = [];
     try {
       let isAllowed = verifyRoleAccess({
         role: role,
@@ -364,7 +364,7 @@ export class DriverService {
       });
       if (isAllowed !== true) {
         statusCode = isAllowed.statusCode;
-        messages = isAllowed.messages;
+        message = isAllowed.message;
         return;
       }
 
@@ -381,7 +381,7 @@ export class DriverService {
         onRide: isChat == 'true' ? -1 : 0,
       });
       if (res.affected > 0) {
-        messages.push(
+        message.push(
           `The chat status for driver is ${
             isChat == 'true' ? 'activated' : 'deactivated'
           } successfully`,
@@ -391,16 +391,16 @@ export class DriverService {
           'The driver chat status is not updated in the database',
         );
     } catch (err) {
-      messages.push(
+      message.push(
         `The driver chat status is not ${
           isChat == 'true' ? 'activated' : 'deactivated'
         } successfully`,
       );
-      messages.push(err.message);
+      message.push(err.message);
       statusCode = STATUS_FAILED;
     } finally {
       return {
-        messages,
+        message,
         statusCode,
         data,
       };

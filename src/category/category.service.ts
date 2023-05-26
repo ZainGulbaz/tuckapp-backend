@@ -12,20 +12,20 @@ export class CategoryService {
   ) {}
 
   async getCategories(): Promise<responseInterface> {
-    let messages = [],
+    let message = [],
       data = [],
       statusCode = STATUS_SUCCESS;
     try {
       let categories = await this.categoryRepository.find({});
       statusCode = STATUS_SUCCESS;
       data = categories;
-      messages.push('The categories are fetched successfully');
+      message.push('The categories are fetched successfully');
     } catch (err) {
-      messages.push(err.message);
+      message.push(err.message);
       statusCode = STATUS_FAILED;
     } finally {
       return {
-        messages,
+        message,
         statusCode,
         data,
       };
