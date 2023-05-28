@@ -8,6 +8,7 @@ export class UploadService {
     statusCode: number;
   }) {
     const { fileName, message:msg, statusCode } = body;
+
     let message = [];
     try {
       if (statusCode !== STATUS_SUCCESS) {
@@ -37,7 +38,7 @@ export class UploadService {
     try {
       if (statusCode !== STATUS_SUCCESS) {
         throw new Error(msg);
-      } else message.push(message);
+      } else message.push(msg);
       return {
         statusCode,
         message,
