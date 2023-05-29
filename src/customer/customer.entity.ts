@@ -18,10 +18,10 @@ export class Customer {
   @Column({ nullable: true, unique: true })
   phoneNumber: string;
 
-  @Column({ nullable: false })
+  @Column({ nullable: true })
   country: string;
 
-  @Column({ nullable: false })
+  @Column({ nullable: true })
   city: string;
 
   @Column({ nullable: true })

@@ -20,7 +20,7 @@ export class AuthMiddleware implements NestMiddleware {
     },
     [roleEnums.customer]: async (id: number) => {
       let res = await this.loggerService.getCustomer(id);
-      return res.phoneNumber;
+      return res.email;
     },
   };
 
@@ -75,7 +75,6 @@ export class AuthMiddleware implements NestMiddleware {
         if (await this.credentialsFunctionMapping[role](res, req, id)) {
           return;
         }
-
         if (user.username == username && username !== undefined) {
           req.body.role = role;
           req.body.authId = id;
@@ -103,7 +102,7 @@ export class AuthMiddleware implements NestMiddleware {
     } catch (err) {
       console.log(err);
       res.json({
-        statusCode: STATUS_FAILED,
+        statusCode: STATUS_UNAUTHORIZED,
         message: ['The user is unauthorized', err.message],
         data: [],
       });

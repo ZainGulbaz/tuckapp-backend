@@ -43,7 +43,7 @@ export class CustomerService {
         let token = generateToken(
           res.raw.insertId,
           roleEnums.customer,
-          body.phoneNumber,
+          body.email,
         );
 
         data = [{ ...body, token }];

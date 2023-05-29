@@ -17,7 +17,7 @@ export class CreateCustomerDto {
   email: string;
 
   @IsOptional()
-  @IsPhoneNumber()
+  @IsString()
   phoneNumber: string;
 
   @IsString()
