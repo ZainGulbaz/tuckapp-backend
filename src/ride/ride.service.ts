@@ -1,7 +1,7 @@
 import { Injectable, Body, Inject } from '@nestjs/common';
 import { CreateRideDto } from './dtos/create.ride.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, LessThan, MoreThan, Repository } from 'typeorm';
 import { Ride } from './ride.entity';
 import { Driver } from 'src/driver/driver.entity';
 import { Ride_Service } from './ride-services.entity';
@@ -162,7 +162,8 @@ export class RideService {
         throw new Error('You are not authorized for this ride');
       else if (ride.endTime || ride.transactionId)
         throw new Error('Ride is already completed');
-      else if(ride.isCancel==1) throw new Error("The ride is canceled already");  
+      else if (ride.isCancel == 1)
+        throw new Error('The ride is canceled already');
       else {
         rideTransactionId = await this.rideHelperService.createRideTransaction({
           customerId: ride.customerId,
@@ -290,7 +291,8 @@ export class RideService {
 
       await validateDriverForRideAndOffers(this.driverRepository, driverId);
       let ride = await this.rideRepository.findOne({ where: { id } });
-      if(ride.isCancel==1) throw new Error("The ride is canceled by the customer");
+      if (ride.isCancel == 1)
+        throw new Error('The ride is canceled by the customer');
       //await validateServiceCategory(driverId, ride, this.driverRepository);
 
       let driverRes = await this.driverRepository.findOne({
@@ -407,7 +409,7 @@ export class RideService {
       if (driverCurrentRide.onRide < 1)
         throw new Error('There is currently no ride assigned to the driver');
       let currentRide = await this.rideRepository.findOne({
-        where: { id: driverCurrentRide.onRide, isCancel:0 },
+        where: { id: driverCurrentRide.onRide, isCancel: 0 },
       });
       if (!currentRide)
         throw new Error('Error in getting ride for the specific driver');
@@ -473,17 +475,17 @@ export class RideService {
         return;
       }
 
-      let ride= await this.rideRepository.findOne({where:{id:rideId}});
+      let ride = await this.rideRepository.findOne({ where: { id: rideId } });
 
-      if(ride==null) throw new Error("There is no ride with id in the database");
-      else if(ride.isCancel==1){
-        message.push("The ride is already cancelled");
-        statusCode=STATUS_FAILED;
+      if (ride == null)
+        throw new Error('There is no ride with id in the database');
+      else if (ride.isCancel == 1) {
+        message.push('The ride is already cancelled');
+        statusCode = STATUS_FAILED;
         return;
-      }
-      else if(ride.endTime){
-        message.push("The ride is already completed");
-        statusCode=STATUS_FAILED;
+      } else if (ride.endTime) {
+        message.push('The ride is already completed');
+        statusCode = STATUS_FAILED;
         return;
       }
 
@@ -491,7 +493,9 @@ export class RideService {
         isCancel: 1,
       });
       if (canceledRide.affected > 0) {
-        await this.driverRepository.query(`UPDATE driver SET onRide=0 where onRide=${rideId}`);
+        await this.driverRepository.query(
+          `UPDATE driver SET onRide=0 where onRide=${rideId}`,
+        );
         message.push('The ride has been canceled successfully');
         statusCode = STATUS_SUCCESS;
         return;
@@ -499,6 +503,64 @@ export class RideService {
       throw new Error('The ride is not updated in the database');
     } catch (err) {
       message = ['The ride is not canceled successfully', err.message];
+      statusCode = STATUS_FAILED;
+    } finally {
+      return {
+        statusCode,
+        data,
+        message,
+      };
+    }
+  }
+
+
+  async checkRideAvailability(
+    rideId: number,
+    role: string,
+  ): Promise<responseInterface> {
+
+    let statusCode = STATUS_SUCCESS,
+    data = [],
+    message = [];
+    
+
+    try {
+
+      let isAllowed = verifyRoleAccess({
+        role: role,
+        allowedRoles: [roleEnums.driver],
+      });
+      if (isAllowed !== true) {
+        statusCode = isAllowed.statusCode;
+        message = isAllowed.message;
+        return;
+      }
+     
+
+      let ride = await this.rideRepository.findOne({
+        where: {
+          id: rideId,
+          isCancel: 0,
+          startTime: MoreThan(
+            new Date().getTime() - parseInt(process.env.RIDE_EXPIRY_TIME),
+          ),
+          endTime:IsNull()
+        },
+      });
+      if (ride) {
+        message.push(
+          'The ride is still available and you can make offer for it',
+        );
+        data = [ride];
+        statusCode = STATUS_SUCCESS;
+        return;
+      }
+      message.push('The ride is not available any more');
+      statusCode = STATUS_NOTFOUND;
+      data = [];
+    } catch (error) {
+      message.push('There is error in fetching the available ride');
+      message.push(error.message);
       statusCode = STATUS_FAILED;
     } finally {
       return {
