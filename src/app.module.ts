@@ -39,6 +39,7 @@ import { TransactionModule } from './transaction/transaction.module';
 import { OfferModule } from './offer/offer.module';
 import { ServicesModule } from './services/services.module';
 import { CategoryModule } from './category/category.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 
 let databaseCredentials = JSON.parse(
@@ -70,6 +71,7 @@ let databaseCredentials = JSON.parse(
       Driver_Service,
       Category,
     ]),
+    ScheduleModule.forRoot(),
     LoginModule,
     AdminModule,
     CustomerModule,

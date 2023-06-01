@@ -12,15 +12,13 @@ import { Offer } from './offer.entity';
 import { Ride } from 'src/ride/ride.entity';
 import { Driver } from 'src/driver/driver.entity';
 import { verifyRoleAccess } from 'src/utils/commonfunctions';
-import { roleEnums } from 'src/utils/enums';
+import { roleEnums, valueEnums } from 'src/utils/enums';
 import { removeKeysFromBody } from 'src/utils/commonfunctions';
 import createNotification from 'src/utils/onesignal/createnotifications';
 import oneSignalClient from 'src/utils/onesignal';
 import { AcceptOfferDto } from './dtos/accept.offer.dto';
-import {
-  validateDriverForRideAndOffers,
-  validateServiceCategory,
-} from 'src/utils/crossservicesmethods';
+import { validateDriverForRideAndOffers } from 'src/utils/crossservicesmethods';
+import { Cron, CronExpression } from '@nestjs/schedule';
 @Injectable()
 export class OfferService {
   constructor(
@@ -63,6 +61,10 @@ export class OfferService {
         //    body.rideId,
         //   body.amount,
         // );
+        console.log(createdOffer);
+        await this.driverRepository.update(authId, {
+          onOffer: createdOffer.raw.insertId,
+        });
         message.push('The offer is successfully send to the customer');
         //message.push(notificationResMessage);
         statusCode = STATUS_SUCCESS;
@@ -171,6 +173,7 @@ export class OfferService {
 
         let driverUpdatedRes = await this.driverRepository.update(driverId, {
           onRide: rideId,
+          onOffer: valueEnums.driverFree,
         });
 
         if (driverUpdatedRes.affected < 1)
@@ -281,9 +284,9 @@ export class OfferService {
       let canceledOffer = await this.offerRepository.query(
         `SELECT * FROM offer WHERE driverId=${driverId} AND isCancel=1 ORDER BY expiryTime DESC LIMIT 1`,
       );
-      if (canceledOffer.length !== 0 && canceledOffer[0]["isNotified"]==0) {
+      if (canceledOffer.length !== 0 && canceledOffer[0]['isNotified'] == 0) {
         [data] = canceledOffer;
-        await this.offerRepository.update(data["id"], { isNotified: 1 });
+        await this.offerRepository.update(data['id'], { isNotified: 1 });
         message.push('The latest canceled offer has been found');
         statusCode = STATUS_SUCCESS;
       } else {
@@ -341,8 +344,8 @@ export class OfferService {
       else if (ride.endTime) throw new Error('The ride is completed already');
       else if (ride.driverId)
         throw new Error('The ride is already assigned to a driver');
-      else if(ride.isCancel==1)
-      throw new Error("The ride is canceled already");  
+      else if (ride.isCancel == 1)
+        throw new Error('The ride is canceled already');
     } catch (err) {
       throw new Error(err.message);
     }
@@ -386,6 +389,31 @@ export class OfferService {
       return 'The push notifications has been successfully send';
     } catch (err) {
       return 'Unable to notify driver for the canceled offer :  ' + err.message;
+    }
+  }
+
+  @Cron(CronExpression.EVERY_10_SECONDS)
+  async freeDriversOffer() {
+    try {
+      console.log(
+        'CRON is running to release offers after ===>' +
+          (parseInt(process.env.OFFER_EXPIRY_TIME) / 1000).toFixed(2) +
+          ' seconds',
+      );
+      
+      await this.driverRepository.query(
+        `UPDATE driver SET onOffer=0 WHERE id IN (Select driverId from offer where isCancel=0 AND expiryTime<${BigInt(new Date().getTime())})`,
+      );
+      await this.offerRepository.query(
+        `UPDATE offer SET isCancel=${
+          valueEnums.offerCancel
+        } WHERE expiryTime<${BigInt(new Date().getTime())} AND isCancel=0`,
+      );
+    
+    } catch (err) {
+      console.log('ERROR IN FreeDriversOffer crons');
+      console.log(err.message);
+      console.log(err);
     }
   }
 }

@@ -4,4 +4,11 @@ export const roleEnums = Object.freeze({
   customer: 'CUSTOMER',
 });
 
-export const waitingMinutes = 5;
+
+
+export enum valueEnums{
+ onOffer=-2,
+ driverFree=0,
+ driverOnChat=-1,
+ offerCancel=1
+}

@@ -10,6 +10,7 @@ import { responseInterface } from 'src/utils/interfaces/response';
 import {
   STATUS_FAILED,
   STATUS_NOTFOUND,
+  STATUS_NO_CONTENT,
   STATUS_SUCCESS,
 } from 'src/utils/codes';
 import {
@@ -230,8 +231,16 @@ export class RideService {
       }
 
       let { coordinates: currentCoordinates, radius } = body;
+
+      if(await this.checkDriverOnOffer(authId)){
+        message.push("You cannot access new rides until your previous offer is accepted/rejected");
+        statusCode=STATUS_NO_CONTENT;
+        return;
+      }
+      
       if (currentCoordinates == '') throw new Error('Inavlid Coordinates');
-      await validateDriverForRideAndOffers(this.driverRepository, authId);
+      await validateDriverForRideAndOffers(this.driverRepository, authId,{onOffer:true});
+      
 
       let query = `SELECT rd.id ,startTime, endTime, startLocation,pickupAddress, destinationAddress ,endLocation,rd.amount,rd.city,CONCAT('[',GROUP_CONCAT(DISTINCT( JSON_OBJECT(sr.id,sr.name))),']') services , CONCAT('[',GROUP_CONCAT(DISTINCT( JSON_OBJECT(ct.id,ct.name))),']') categories FROM  ride rd LEFT JOIN ride_category rc ON rd.id=rc.rideId LEFT JOIN category ct ON ct.id=rc.categoryId LEFT JOIN driver dr ON dr.categoryId=rc.categoryId LEFT JOIN ride_service rs ON rs.rideId=rd.id  LEFT JOIN service sr ON sr.id=rs.serviceId LEFT JOIN driver_service drs ON drs.serviceId=rs.serviceId WHERE ISNULL(rd.driverId) AND ST_Distance_Sphere(ST_PointFromText('POINT(${currentCoordinates.replace(
         ',',
@@ -240,7 +249,7 @@ export class RideService {
         radius,
       )}  AND ((UNIX_TIMESTAMP() *1000)-startTime) < ${
         process.env.RIDE_EXPIRY_TIME
-      }  AND (drs.driverId=${authId} OR dr.id=${authId}) AND rd.isCancel=0 GROUP BY rd.id `;
+      }  AND (drs.driverId=${authId} OR dr.id=${authId}) AND rd.isCancel=0 AND rd.city=dr.city GROUP BY rd.id  `;
       let availableRides = await this.rideRepository.query(query);
       if (availableRides.length > 0) {
         statusCode = STATUS_SUCCESS;
@@ -257,7 +266,6 @@ export class RideService {
         return;
       }
     } catch (err) {
-      console.log(err);
       message.push('There are no rides available yet');
       message.push(err.message);
       statusCode = STATUS_FAILED;
@@ -618,6 +626,22 @@ export class RideService {
       return refinedData;
     } catch (err) {
       throw new Error('Error in refining data for join table ' + err.message);
+    }
+  }
+
+  async checkDriverOnOffer(driverId:number):Promise<boolean>
+  {
+    try{
+      let driver=await this.driverRepository.findOne({where:{id:driverId}});
+      if(driver.onOffer>0)
+      {
+        return true;
+      }
+      return false;         
+    }
+    catch(err)
+    {
+          throw new Error(err);
     }
   }
 }
