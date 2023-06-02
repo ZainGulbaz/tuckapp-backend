@@ -15,8 +15,9 @@ export class ServicesService {
       statusCode = STATUS_SUCCESS,
       message = [];
     try {
-      let allservices = await this.serviceRepository.find({});
+      let allservices = await this.serviceRepository.query(`Select CONCAT('[',GROUP_CONCAT(JSON_OBJECT(id,name)),']') services,type from service Group BY type`);
       data = allservices;
+      console.log(data);
       message.push('The services are fetched successfully');
       statusCode = STATUS_SUCCESS;
     } catch (err) {

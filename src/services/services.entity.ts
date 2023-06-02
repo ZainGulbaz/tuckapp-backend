@@ -9,6 +9,12 @@ export class Service {
   @Column()
   name: string;
 
+  @Column()
+  type:string;
+
+  @Column({default:null})
+  sortOrder:string;
+
   @OneToMany(() => Driver_Service, (driverService) => driverService.serviceId)
   driverService: Driver_Service[];
 }
