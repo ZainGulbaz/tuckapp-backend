@@ -400,14 +400,16 @@ export class OfferService {
           (parseInt(process.env.OFFER_EXPIRY_TIME) / 1000).toFixed(2) +
           ' seconds',
       );
+
+      let currentTime=BigInt(new Date().getTime());
       
       await this.driverRepository.query(
-        `UPDATE driver SET onOffer=0 WHERE id IN (Select driverId from offer where isCancel=0 AND expiryTime<${BigInt(new Date().getTime())})`,
+        `UPDATE driver SET onOffer=0 WHERE id IN (Select driverId from offer where isCancel=0 AND expiryTime<${currentTime})`,
       );
       await this.offerRepository.query(
         `UPDATE offer SET isCancel=${
           valueEnums.offerCancel
-        } WHERE expiryTime<${BigInt(new Date().getTime())} AND isCancel=0`,
+        } WHERE expiryTime<${currentTime} AND isCancel=0`,
       );
     
     } catch (err) {

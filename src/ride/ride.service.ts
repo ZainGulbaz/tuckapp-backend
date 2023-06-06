@@ -59,7 +59,7 @@ export class RideService {
       body.startLocation = body.startLocation.trim();
       body.endLocation ? (body.endLocation = body.endLocation.trim()) : null;
 
-      await this.validateRideLocation(body);
+      // await this.validateRideLocation(body);
 
       let { categories, services, authId: customerId } = body;
       delete body.authId;
