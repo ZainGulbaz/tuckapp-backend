@@ -246,8 +246,6 @@ export class RideService {
       }
          
 
-      console.log(driverCity);
-
       let query = ` 
       SELECT *
       FROM (
@@ -280,7 +278,7 @@ export class RideService {
       }   
       AND rd.isCancel=0 AND rd.city='${driverCity}' GROUP BY rd.id  
       ) AS abc
-      WHERE FIND_IN_SET(39, abc.driverIds) > 0;`;
+      WHERE FIND_IN_SET(${authId}, abc.driverIds) > 0;`;
 
       let availableRides = await this.rideRepository.query(query);
       if (availableRides.length > 0) {
