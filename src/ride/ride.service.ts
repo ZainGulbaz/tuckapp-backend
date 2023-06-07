@@ -1,11 +1,12 @@
 import { Injectable, Body, Inject } from '@nestjs/common';
 import { CreateRideDto } from './dtos/create.ride.dto';
-import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, LessThan, MoreThan, Repository } from 'typeorm';
+import { InjectRepository,InjectDataSource } from '@nestjs/typeorm';
+import { IsNull, MoreThan, Repository } from 'typeorm';
 import { Ride } from './ride.entity';
 import { Driver } from 'src/driver/driver.entity';
 import { Ride_Service } from './ride-services.entity';
 import { Ride_Category } from './ride-categories.entity';
+import { Offer } from 'src/offer/offer.entity';
 import { responseInterface } from 'src/utils/interfaces/response';
 import {
   STATUS_FAILED,
@@ -24,7 +25,7 @@ import { UpdateRideDto } from './dtos/update.ride.dto';
 import { AllRidesDto } from './dtos/all.rides.dtos';
 import { PushNotifyService } from './pushnotify.service';
 import { RideHelperService } from './ride.helper.service';
-import { validateDriverForRideAndOffers } from 'src/utils/crossservicesmethods';
+import { checkDriverOnOffer, validateRideForDriver } from 'src/utils/crossservicesmethods';
 
 @Injectable()
 export class RideService {
@@ -39,6 +40,9 @@ export class RideService {
     private rideServiceRepository: Repository<Ride_Service>,
     @InjectRepository(Ride_Category)
     private rideCategoryRepository: Repository<Ride_Category>,
+    @InjectRepository(Offer)
+    private offerRepository: Repository<Offer>
+
   ) {}
 
   async createRide(@Body() body: CreateRideDto): Promise<responseInterface> {
@@ -232,14 +236,14 @@ export class RideService {
 
       let { coordinates: currentCoordinates, radius } = body;
 
-      if(await this.checkDriverOnOffer(authId)){
+      if(await checkDriverOnOffer(authId,this.offerRepository)){
         message.push("You cannot access new rides until your previous offer is accepted/rejected");
         statusCode=STATUS_NO_CONTENT;
         return;
       }
       
       if (currentCoordinates == '') throw new Error('Inavlid Coordinates');
-      await validateDriverForRideAndOffers(this.driverRepository, authId,{onOffer:true});
+      await validateRideForDriver(this.driverRepository, authId);
       
 
       let query = `SELECT rd.id ,startTime, endTime, startLocation,pickupAddress, destinationAddress ,endLocation,rd.amount,rd.city,CONCAT('[',GROUP_CONCAT(DISTINCT( JSON_OBJECT(sr.id,sr.name))),']') services , CONCAT('[',GROUP_CONCAT(DISTINCT( JSON_OBJECT(ct.id,ct.name))),']') categories FROM  ride rd LEFT JOIN ride_category rc ON rd.id=rc.rideId LEFT JOIN category ct ON ct.id=rc.categoryId LEFT JOIN driver dr ON dr.categoryId=rc.categoryId LEFT JOIN ride_service rs ON rs.rideId=rd.id  LEFT JOIN service sr ON sr.id=rs.serviceId LEFT JOIN driver_service drs ON drs.serviceId=rs.serviceId WHERE ISNULL(rd.driverId) AND ST_Distance_Sphere(ST_PointFromText('POINT(${currentCoordinates.replace(
@@ -297,7 +301,7 @@ export class RideService {
         return;
       }
 
-      await validateDriverForRideAndOffers(this.driverRepository, driverId);
+      await validateRideForDriver(this.driverRepository, driverId);
       let ride = await this.rideRepository.findOne({ where: { id } });
       if (ride.isCancel == 1)
         throw new Error('The ride is canceled by the customer');
@@ -629,19 +633,5 @@ export class RideService {
     }
   }
 
-  async checkDriverOnOffer(driverId:number):Promise<boolean>
-  {
-    try{
-      let driver=await this.driverRepository.findOne({where:{id:driverId}});
-      if(driver.onOffer>0)
-      {
-        return true;
-      }
-      return false;         
-    }
-    catch(err)
-    {
-          throw new Error(err);
-    }
-  }
+  
 }

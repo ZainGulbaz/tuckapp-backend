@@ -73,9 +73,6 @@ export class Driver {
   @Column({ default: 0 })
   onRide: number;
 
-  @Column({default:0})
-  onOffer:number
-
   @Column({ nullable: true })
   categoryId: number;
 

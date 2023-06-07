@@ -10,6 +10,7 @@ import { DriverModule } from './driver/driver.module';
 import { DriverController } from './driver/driver.controller';
 import { LoginController } from './login/login.controller';
 import { RideController } from './ride/ride.controller';
+import { ServicesController } from './services/services.controller';
 import { TransactionController } from './transaction/transaction.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Driver } from './driver/driver.entity';
@@ -26,7 +27,7 @@ import { Ride_Category } from './ride/ride-categories.entity';
 import { AuthMiddleware } from './auth.middleware';
 import { LoggerService } from './auth.service';
 import { DataSource } from 'typeorm';
-import { DRIVER_ROUTE, ADMIN_ROUTE, CUSTOMER_ROUTE } from './utils/routes';
+import { DRIVER_ROUTE, ADMIN_ROUTE, CUSTOMER_ROUTE,SERVICES_ROUTE } from './utils/routes';
 import { DriverService } from './driver/driver.service';
 import { LoginModule } from './login/login.module';
 import { AdminModule } from './admin/admin.module';
@@ -70,6 +71,7 @@ let databaseCredentials = JSON.parse(
       Customer,
       Driver_Service,
       Category,
+      Offer
     ]),
     ScheduleModule.forRoot(),
     LoginModule,
@@ -127,6 +129,10 @@ export class AppModule implements NestModule {
           path: `${process.env.GLOBAL_PREFIX}/${CUSTOMER_ROUTE}/otp`,
           method: RequestMethod.POST,
         },
+        {
+          path: `${process.env.GLOBAL_PREFIX}/${SERVICES_ROUTE}`,
+          method: RequestMethod.GET,
+        }
       )
       .forRoutes(
         DriverController,
@@ -137,6 +143,7 @@ export class AppModule implements NestModule {
         RideController,
         TransactionController,
         OfferController,
+        ServicesController
       );
   }
 }

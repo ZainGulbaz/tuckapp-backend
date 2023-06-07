@@ -17,7 +17,7 @@ import { removeKeysFromBody } from 'src/utils/commonfunctions';
 import createNotification from 'src/utils/onesignal/createnotifications';
 import oneSignalClient from 'src/utils/onesignal';
 import { AcceptOfferDto } from './dtos/accept.offer.dto';
-import { validateDriverForRideAndOffers } from 'src/utils/crossservicesmethods';
+import { validateRideForDriver } from 'src/utils/crossservicesmethods';
 import { Cron, CronExpression } from '@nestjs/schedule';
 @Injectable()
 export class OfferService {
@@ -47,7 +47,7 @@ export class OfferService {
         where: [{ id: body.rideId }],
       });
       // await validateServiceCategory(authId, ride, this.driverRepository);
-      await validateDriverForRideAndOffers(this.driverRepository, authId);
+      await validateRideForDriver(this.driverRepository, authId);
       await this.checkRideValidation(ride);
       ``;
       let createdOffer = await this.offerRepository.insert({
@@ -61,10 +61,6 @@ export class OfferService {
         //    body.rideId,
         //   body.amount,
         // );
-        console.log(createdOffer);
-        await this.driverRepository.update(authId, {
-          onOffer: createdOffer.raw.insertId,
-        });
         message.push('The offer is successfully send to the customer');
         //message.push(notificationResMessage);
         statusCode = STATUS_SUCCESS;
@@ -173,7 +169,6 @@ export class OfferService {
 
         let driverUpdatedRes = await this.driverRepository.update(driverId, {
           onRide: rideId,
-          onOffer: valueEnums.driverFree,
         });
 
         if (driverUpdatedRes.affected < 1)
@@ -333,7 +328,6 @@ export class OfferService {
     }
   }
   async checkRideValidation(ride: Ride) {
-    console.log(ride);
     try {
       if (ride == null) throw new Error('The ride id provided is invalid');
       else if (
@@ -396,21 +390,22 @@ export class OfferService {
   async freeDriversOffer() {
     try {
       console.log(
-        'CRON is running to release offers after ===>' +
+        'CRON is running to release offers with expiry time ===>' +
           (parseInt(process.env.OFFER_EXPIRY_TIME) / 1000).toFixed(2) +
-          ' seconds',
+          ' seconds after every 5 seconds',
       );
 
       let currentTime=BigInt(new Date().getTime());
-      
-      await this.driverRepository.query(
-        `UPDATE driver SET onOffer=0 WHERE id IN (Select driverId from offer where isCancel=0 AND expiryTime<${currentTime})`,
-      );
       await this.offerRepository.query(
         `UPDATE offer SET isCancel=${
           valueEnums.offerCancel
         } WHERE expiryTime<${currentTime} AND isCancel=0`,
       );
+
+      console.log("CRON has been run successfully");
+      console.log("-------------------------------------------------------");
+
+
     
     } catch (err) {
       console.log('ERROR IN FreeDriversOffer crons');

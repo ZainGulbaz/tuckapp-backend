@@ -13,7 +13,10 @@ export class Service {
   type:string;
 
   @Column({default:null})
-  sortOrder:string;
+  sortOrder:number;
+
+  @Column({default:0})
+  isDisable:number;
 
   @OneToMany(() => Driver_Service, (driverService) => driverService.serviceId)
   driverService: Driver_Service[];

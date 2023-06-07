@@ -1,7 +1,9 @@
 import { Ride } from 'src/ride/ride.entity';
 import { Driver } from 'src/driver/driver.entity';
+import { Offer } from 'src/offer/offer.entity';
 import { Repository } from 'typeorm';
 import { valueEnums } from './enums';
+
 export const validateServiceCategory = async (
   driverId: number,
   ride: Ride,
@@ -28,12 +30,9 @@ export const validateServiceCategory = async (
   }
 };
 
-export const validateDriverForRideAndOffers = async (
+export const validateRideForDriver = async (
   driverRepository: Repository<Driver>,
   driverId: number,
-  filters:{
-    onOffer?:boolean
-  }={onOffer:false}
 ) => {
   try {
     let driver = await driverRepository.findOne({ where: { id: driverId } });
@@ -42,9 +41,25 @@ export const validateDriverForRideAndOffers = async (
       throw new Error('The driver is already completing a ride');
     else if (driver.onRide == valueEnums.driverOnChat)
       throw new Error('The driver is in a chat session with the customer');
-    else if(driver.onOffer>valueEnums.driverFree && filters.onOffer)
-     throw new Error("The driver is in offer with the customer");
   } catch (err) {
     throw new Error(err.message);
   }
 };
+
+
+export async function checkDriverOnOffer(driverId:number,offerRepository:Repository<Offer>):Promise<boolean>
+  {
+    try{
+      let driver=await offerRepository.find({where:{driverId,isCancel:0}});
+      console.log(driver);
+      if(driver.length>0)
+      {
+        return true;
+      }
+      return false;         
+    }
+    catch(err)
+    {
+          throw new Error(err);
+    }
+  }

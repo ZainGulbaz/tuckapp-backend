@@ -7,6 +7,7 @@ import { Customer } from 'src/customer/customer.entity';
 import { Transaction } from 'src/transaction/transaction.entity';
 import { Ride_Service } from './ride-services.entity';
 import { Ride_Category } from './ride-categories.entity';
+import { Offer } from 'src/offer/offer.entity';
 import { RideService } from './ride.service';
 import { PushNotifyService } from './pushnotify.service';
 import { RideHelperService } from './ride.helper.service';
@@ -21,6 +22,7 @@ import { RideHelperService } from './ride.helper.service';
       Customer,
       Ride_Service,
       Ride_Category,
+      Offer
     ]),
   ],
 })
