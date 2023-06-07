@@ -41,9 +41,14 @@ export const validateRideForDriver = async (
       throw new Error('The driver is already completing a ride');
     else if (driver.onRide == valueEnums.driverOnChat)
       throw new Error('The driver is in a chat session with the customer');
-  } catch (err) {
+     
+      return driver.city;
+  
+    } catch (err) {
     throw new Error(err.message);
   }
+  
+  
 };
 
 

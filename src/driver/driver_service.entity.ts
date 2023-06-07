@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne,Index } from 'typeorm';
 import { Driver } from './driver.entity';
 import { Service } from 'src/services/services.entity';
 
@@ -7,9 +7,12 @@ export class Driver_Service {
   @PrimaryGeneratedColumn()
   id: number;
 
+
+  @Index("driver-service-idx")
   @Column()
   serviceId: number;
 
+  @Index("driverId,service-idx")
   @Column()
   driverId: number;
 

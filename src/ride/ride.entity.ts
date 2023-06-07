@@ -15,6 +15,7 @@ export class Ride {
   @Column({ nullable: false })
   customerId: number;
 
+  @Index("driver-idx")
   @Column({ nullable: true })
   driverId: number;
 
@@ -36,6 +37,7 @@ export class Ride {
   @Column({ nullable: false })
   amount: number;
 
+  @Index("city-idx")
   @Column()
   city: string;
 
