@@ -75,6 +75,7 @@ export class RideService {
         customerId,
         startTime: new Date().getTime(),
       });
+      
       if (categories) {
         let categoriesBody = await this.refineJoinTableData(
           ride.raw.insertId,
@@ -246,14 +247,15 @@ export class RideService {
       await validateRideForDriver(this.driverRepository, authId);
       
 
-      let query = `SELECT rd.id ,startTime, endTime, startLocation,pickupAddress, destinationAddress ,endLocation,rd.amount,rd.city,CONCAT('[',GROUP_CONCAT(DISTINCT( JSON_OBJECT(sr.id,sr.name))),']') services , CONCAT('[',GROUP_CONCAT(DISTINCT( JSON_OBJECT(ct.id,ct.name))),']') categories FROM  ride rd LEFT JOIN ride_category rc ON rd.id=rc.rideId LEFT JOIN category ct ON ct.id=rc.categoryId LEFT JOIN driver dr ON dr.categoryId=rc.categoryId LEFT JOIN ride_service rs ON rs.rideId=rd.id  LEFT JOIN service sr ON sr.id=rs.serviceId LEFT JOIN driver_service drs ON drs.serviceId=rs.serviceId WHERE ISNULL(rd.driverId) AND ST_Distance_Sphere(ST_PointFromText('POINT(${currentCoordinates.replace(
+      let query = `SELECT rd.id ,startTime, endTime, startLocation,pickupAddress, destinationAddress ,endLocation,rd.amount,rd.city,CONCAT('[',GROUP_CONCAT(DISTINCT( JSON_OBJECT(sr.id,sr.name))),']') services FROM  ride rd  LEFT JOIN driver dr ON dr.city=rd.city LEFT JOIN ride_service rs ON rs.rideId=rd.id  LEFT JOIN service sr ON sr.id=rs.serviceId LEFT JOIN driver_service drs ON drs.serviceId=rs.serviceId WHERE ISNULL(rd.driverId) AND ST_Distance_Sphere(ST_PointFromText('POINT(${currentCoordinates.replace(
         ',',
         ' ',
       )})', 4326),ST_PointFromText(CONCAT('POINT(',REPLACE(startLocation,',',' '),')'), 4326)) <= ${parseNull(
         radius,
       )}  AND ((UNIX_TIMESTAMP() *1000)-startTime) < ${
         process.env.RIDE_EXPIRY_TIME
-      }  AND (drs.driverId=${authId} OR dr.id=${authId}) AND rd.isCancel=0 AND rd.city=dr.city GROUP BY rd.id  `;
+      }  AND (dr.id=${authId}) AND rd.isCancel=0 AND rd.city=dr.city GROUP BY rd.id  `;
+
       let availableRides = await this.rideRepository.query(query);
       if (availableRides.length > 0) {
         statusCode = STATUS_SUCCESS;
