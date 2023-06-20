@@ -50,18 +50,20 @@ export class OfferService {
       await validateRideForDriver(this.driverRepository, authId);
       await this.checkRideValidation(ride);
       ``;
-      let createdOffer = await this.offerRepository.insert({
+      let createOfferBody={
         ...body,
         driverId: authId,
         expiryTime:
           BigInt(new Date().getTime()) + BigInt(process.env.OFFER_EXPIRY_TIME),
-      });
+      }
+      let createdOffer = await this.offerRepository.insert(createOfferBody);
       if (createdOffer.raw.affectedRows == 1) {
         //  let notificationResMessage = await this.notifyOfferToCustomer(
         //    body.rideId,
         //   body.amount,
         // );
         message.push('The offer is successfully send to the customer');
+        data.push({offerId:createdOffer.raw.insertId,...createOfferBody});
         //message.push(notificationResMessage);
         statusCode = STATUS_SUCCESS;
       } else {
