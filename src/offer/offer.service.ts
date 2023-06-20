@@ -63,7 +63,7 @@ export class OfferService {
         //   body.amount,
         // );
         message.push('The offer is successfully send to the customer');
-        data.push({offerId:createdOffer.raw.insertId,...createOfferBody});
+        data.push({offerId:createdOffer.raw.insertId,...body,driverId:authId});
         //message.push(notificationResMessage);
         statusCode = STATUS_SUCCESS;
       } else {
