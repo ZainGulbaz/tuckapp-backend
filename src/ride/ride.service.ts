@@ -81,7 +81,7 @@ export class RideService {
         ...body,
         customerId,
         startTime: new Date().getTime(),
-        city,
+        city:city?.replace("City","").trim(),
         country:countryName
       });
       if (categories) {
