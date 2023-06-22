@@ -28,12 +28,6 @@ export class CreateRideDto {
   services: string;
 
   @IsString()
-  city: string;
-
-  @IsString()
-  country: string;
-
-  @IsString()
   pickupAddress:string;
 
   @IsOptional()

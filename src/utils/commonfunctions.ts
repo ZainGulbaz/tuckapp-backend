@@ -2,6 +2,7 @@ import * as jwt from 'jsonwebtoken';
 import 'dotenv/config';
 import { responseInterface } from './interfaces/response';
 import { STATUS_FAILED, STATUS_UNAUTHORIZED } from './codes';
+import Axios from "axios";
 
 export function generateToken(id: number, role: string, username: string) {
   return jwt.sign(
@@ -83,3 +84,16 @@ export const parseNull = (data: string | number): string => {
   if (data == null || data == undefined) return "''";
   return `'${data}'`;
 };
+
+
+export const getCity=async(coordinates:number[]|string[]):Promise<{countryName:string,city:string}>=>{
+  try{
+      const[lat,lng]=coordinates;
+      let response=await Axios.get(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`);
+      return response.data;
+  }
+  catch(err)
+  {
+    throw new Error(err);
+  }
+}

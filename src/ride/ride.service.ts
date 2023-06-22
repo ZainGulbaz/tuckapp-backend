@@ -1,6 +1,6 @@
 import { Injectable, Body, Inject } from '@nestjs/common';
 import { CreateRideDto } from './dtos/create.ride.dto';
-import { InjectRepository,InjectDataSource } from '@nestjs/typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, MoreThan, Repository } from 'typeorm';
 import { Ride } from './ride.entity';
 import { Driver } from 'src/driver/driver.entity';
@@ -15,6 +15,7 @@ import {
   STATUS_SUCCESS,
 } from 'src/utils/codes';
 import {
+  getCity,
   parseNull,
   removeKeysFromBody,
   reverseCoordinates,
@@ -26,6 +27,7 @@ import { AllRidesDto } from './dtos/all.rides.dtos';
 import { PushNotifyService } from './pushnotify.service';
 import { RideHelperService } from './ride.helper.service';
 import { checkDriverOnOffer, validateRideForDriver } from 'src/utils/crossservicesmethods';
+
 
 @Injectable()
 export class RideService {
@@ -70,10 +72,17 @@ export class RideService {
       delete body.categories;
       delete body.services;
 
+      
+      let {city,countryName}= await getCity(body.startLocation.split(","));
+      if(city.length==0 || city==null || city==undefined) city= await this.getCityFromRide(body.startLocation);
+      if(!countryName) countryName="";
+
       let ride = await this.rideRepository.insert({
         ...body,
         customerId,
         startTime: new Date().getTime(),
+        city,
+        country:countryName
       });
       if (categories) {
         let categoriesBody = await this.refineJoinTableData(
