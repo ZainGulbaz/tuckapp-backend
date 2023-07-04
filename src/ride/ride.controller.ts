@@ -51,8 +51,8 @@ export class RideController {
   }
 
   @Delete('cancel/:rideId')
-  async cancelRide(@Param() params:{rideId:number},@Body() body:{role:string}){
-    return await this.rideService.cancelRide(params.rideId,body.role);
+  async cancelRide(@Param() params:{rideId:number},@Body() body:{role:string,authId:number}){
+    return await this.rideService.cancelRide(params.rideId,body.role,body.authId);
   }
   
   @Get('available/:rideId')

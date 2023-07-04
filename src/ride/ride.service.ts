@@ -13,6 +13,7 @@ import {
   STATUS_NOTFOUND,
   STATUS_NO_CONTENT,
   STATUS_SUCCESS,
+  STATUS_UNAUTHORIZED,
 } from 'src/utils/codes';
 import {
   getCity,
@@ -507,14 +508,14 @@ export class RideService {
     }
   }
 
-  async cancelRide(rideId: number, role: string): Promise<responseInterface> {
+  async cancelRide(rideId: number, role: string, authId:number): Promise<responseInterface> {
     let statusCode = STATUS_SUCCESS,
       data = [],
       message = [];
     try {
       let isAllowed = verifyRoleAccess({
         role: role,
-        allowedRoles: [roleEnums.customer],
+        allowedRoles: [roleEnums.customer,roleEnums.driver],
       });
       if (isAllowed !== true) {
         statusCode = isAllowed.statusCode;
@@ -535,6 +536,13 @@ export class RideService {
         statusCode = STATUS_FAILED;
         return;
       }
+      else if((role==roleEnums.customer && ride.customerId!==authId) ||(role==roleEnums.driver && ride.driverId!==authId) )
+      {
+        message.push('You are not authorized to cancel this ride');
+        statusCode=STATUS_UNAUTHORIZED;
+        return;
+      }
+  
 
       let canceledRide = await this.rideRepository.update(rideId, {
         isCancel: 1,
