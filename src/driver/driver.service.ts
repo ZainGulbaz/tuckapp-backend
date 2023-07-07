@@ -12,7 +12,7 @@ import { Driver } from './driver.entity';
 import { Category } from 'src/category/category.entity';
 import { Repository } from 'typeorm';
 import { updateDriverDto } from './dtos/driver.update.dto';
-import { generateToken, verifyRoleAccess } from 'src/utils/commonfunctions';
+import { apiClosed, generateToken, verifyRoleAccess } from 'src/utils/commonfunctions';
 import { roleEnums } from 'src/utils/enums';
 import { Driver_Service } from './driver_service.entity';
 
@@ -408,17 +408,20 @@ export class DriverService {
   }
 
   async distance(driverId:number,role:string):Promise<responseInterface>{
+   
     let statusCode=STATUS_SUCCESS,data=[],message=[];
+    return apiClosed();
     try{
-        let isAllowed = verifyRoleAccess({
-          role: role,
-          allowedRoles: [roleEnums.driver],
-        });
-        if (isAllowed !== true) {
-          statusCode = isAllowed.statusCode;
-          message = isAllowed.message;
-          return;
-        }
+      
+        // let isAllowed = verifyRoleAccess({
+        //   role: role,
+        //   allowedRoles: [roleEnums.driver],
+        // });
+        // if (isAllowed !== true) {
+        //   statusCode = isAllowed.statusCode;
+        //   message = isAllowed.message;
+        //   return;
+        // }
 
         let driver=await this.driverRepository.findOne({where:{id:driverId}});
         if(!driver.onRide){

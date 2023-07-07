@@ -303,7 +303,7 @@ export class RideService {
       ) AS abc
       WHERE FIND_IN_SET(${authId}, abc.driverIds) > 0; `;
 
-      console.log(query);
+
       let availableRides = await this.rideRepository.query(query);
       if (availableRides.length > 0) {
         statusCode = STATUS_SUCCESS;
@@ -604,23 +604,19 @@ export class RideService {
         message = isAllowed.message;
         return;
       }
-     
+    
+      let driver:Driver= await this.driverRepository.findOne({where:{onRide:rideId}});
+      const query=`Select 
+      *
+      ${(driver)?`,ROUND(ST_Distance(Point(SUBSTRING_INDEX(rd.startLocation, ',', 1),SUBSTRING_INDEX(rd.startLocation, ',', -1)),Point(${driver.currentCoordinates}))* 100,0) AS pickupDistance,ROUND(ST_Distance(Point(SUBSTRING_INDEX(rd.endLocation, ',', 1),SUBSTRING_INDEX(rd.endLocation, ',', -1)),Point(${driver.currentCoordinates}))* 100,0) AS destinationDistance`:""} from ride rd WHERE id=${rideId} AND isCancel=0 AND startTime>${BigInt(new Date().getTime()) - BigInt(parseInt(process.env.RIDE_EXPIRY_TIME))} AND endTime IS NULL`;
 
-      let ride = await this.rideRepository.findOne({
-        where: {
-          id: rideId,
-          isCancel: 0,
-          startTime: MoreThan(
-            new Date().getTime() - parseInt(process.env.RIDE_EXPIRY_TIME),
-          ),
-          endTime:IsNull()
-        },
-      });
-      if (ride) {
+      let ride=await this.rideRepository.query(query);
+        
+      if (ride[0]) {
         message.push(
           role==roleEnums.driver ?'The ride is still available and you can make offer for it':'Your ride is waiting to accept an offer',
         );
-        data = [{...ride,rideCancelTime:process.env.RIDE_CANCEL_TIME}];
+        data = [{...ride[0],rideCancelTime:process.env.RIDE_CANCEL_TIME,units:"meters"}];
         statusCode = STATUS_SUCCESS;
         return;
       }
@@ -671,7 +667,7 @@ export class RideService {
         statusCode=STATUS_FAILED;
         return;
       }
-      
+
 
       if(await checkDriverOnOffer(driverId,this.offerRepository)) {
         message.push("The driver is already on offer");

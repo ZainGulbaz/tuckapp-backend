@@ -97,3 +97,11 @@ export const getCity=async(coordinates:number[]|string[]):Promise<{countryName:s
     throw new Error(err);
   }
 }
+
+export const apiClosed=():responseInterface=>{
+  return{
+    message:["The api is closed for now"],
+    statusCode:STATUS_FAILED,
+    data:[]
+  }
+}
