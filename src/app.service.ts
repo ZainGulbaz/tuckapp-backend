@@ -1,12 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository} from 'typeorm';
 import { Driver } from './driver/driver.entity';
-import { STATUS_FAILED, STATUS_SUCCESS } from './utils/codes';
+import { STATUS_FAILED, STATUS_NOTFOUND, STATUS_SUCCESS } from './utils/codes';
 import { responseInterface } from './utils/interfaces/response';
 import { hashSync, genSaltSync } from 'bcrypt';
 import { roleEnums } from './utils/enums';
 import { generateRandomOtp, verifyRoleAccess } from './utils/commonfunctions';
+
 @Injectable()
 export class AppService {
   constructor(
@@ -15,6 +16,35 @@ export class AppService {
 
   getHello(): string {
     return 'Hello World';
+  }
+
+  async getAppVersions(type:string):Promise<responseInterface>{
+    let statusCode=STATUS_FAILED,message=[],data=[];
+    try{
+         if(type!=="customer" && type!=="driver") {
+                  message.push("Please provide a valid app type i.e customer or driver");
+                  statusCode=STATUS_NOTFOUND;
+                  return;
+         }
+         let versions=await this.driverRepository.query(`SELECT * FROM appversion where appType='${type}' GROUP BY version`);
+         message.push("The app versions are fetched successfully");
+         data=versions;
+         statusCode=STATUS_SUCCESS;
+
+    }
+    catch(error)
+    {
+      message.push("Unable to fetch the app versions");
+      message.push(error.message);
+      statusCode=STATUS_FAILED;
+    }
+    finally{
+return{
+  statusCode,
+  message,
+  data
+}
+    }
   }
 
   async generateOtp(id: number, role: string): Promise<responseInterface> {

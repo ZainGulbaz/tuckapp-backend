@@ -56,7 +56,6 @@ export async function checkDriverOnOffer(driverId:number,offerRepository:Reposit
   {
     try{
       let driver=await offerRepository.find({where:{driverId,isCancel:0}});
-      console.log(driver);
       if(driver.length>0)
       {
         return true;

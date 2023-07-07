@@ -132,6 +132,10 @@ export class AppModule implements NestModule {
         {
           path: `${process.env.GLOBAL_PREFIX}/${SERVICES_ROUTE}`,
           method: RequestMethod.GET,
+        },
+        {
+          path: `${process.env.GLOBAL_PREFIX}/appversion`,
+          method: RequestMethod.GET,
         }
       )
       .forRoutes(

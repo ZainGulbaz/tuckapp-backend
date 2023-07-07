@@ -2,7 +2,7 @@ import { Injectable, NestMiddleware } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import * as jwt from 'jsonwebtoken';
 import { LoggerService } from './auth.service';
-import { STATUS_FAILED, STATUS_UNAUTHORIZED } from './utils/codes';
+import { STATUS_FAILED, STATUS_INVALID_TOKEN, STATUS_UNAUTHORIZED } from './utils/codes';
 import { roleEnums } from './utils/enums';
 
 @Injectable()
@@ -81,7 +81,7 @@ export class AuthMiddleware implements NestMiddleware {
           next();
         } else {
           res.json({
-            statusCode: STATUS_UNAUTHORIZED,
+            statusCode: STATUS_INVALID_TOKEN,
             message: [
               'The user is unauthorized',
               'Authorization Failed! No user found',
@@ -91,7 +91,7 @@ export class AuthMiddleware implements NestMiddleware {
         }
       } else {
         res.json({
-          statusCode: STATUS_UNAUTHORIZED,
+          statusCode: STATUS_INVALID_TOKEN,
           message: [
             'The user is unauthorized',
             'Authorization Failed! No token found',

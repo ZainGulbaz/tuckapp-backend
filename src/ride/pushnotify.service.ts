@@ -71,7 +71,7 @@ export class PushNotifyService {
       let drivers = await this.driverRepository.query(query);
       let driversToken = [];
       let title = 'A new ride is available';
-      let content = { en: `Amount:${amount}` };
+      let content = { en: `` };
       drivers?.map((driver: Driver) => {
         if (driver.oneSignalToken) driversToken.push(driver.oneSignalToken);
       });
@@ -109,7 +109,7 @@ export class PushNotifyService {
         oneSignalTokens.push(customer.oneSignalToken);
       await this.implementNotification({
         title: 'The ride has been completed',
-        content: { en: `Ride Amount: AED${amount}` },
+        content: {en:" " },
         includedPlayerIds: oneSignalTokens,
       });
       return 'The ride completion notifications are successfully sent to driver and customer';

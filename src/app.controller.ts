@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param, Body } from '@nestjs/common';
+import { Controller, Get, Post, Param, Body, Query } from '@nestjs/common';
 import { AppService } from './app.service';
 import { responseInterface } from './utils/interfaces/response';
 
@@ -17,5 +17,10 @@ export class AppController {
     @Body() body: { role: string },
   ): Promise<responseInterface> {
     return await this.appService.generateOtp(params.id, body.role);
+  }
+
+  @Get('/appversion')
+  async getAppVersion(@Query() query:{type:string}){
+    return await this.appService.getAppVersions(query.type);
   }
 }

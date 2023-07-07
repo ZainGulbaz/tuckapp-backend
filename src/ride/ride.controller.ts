@@ -58,8 +58,12 @@ export class RideController {
   @Get('available/:rideId')
   async checkRideAvailability(@Param() params:{rideId:number},@Body() body:{role:string})
     {
-      console.log(params);
       return await this.rideService.checkRideAvailability(params.rideId,body.role);
     }
+
+  @Put('start/:rideId')
+  async startRide(@Param() params:{rideId:number}, @Body() body:{role:string,authId:number}){
+    return await this.rideService.startRide(params.rideId,body.role,body.authId);
+  }
 
 }

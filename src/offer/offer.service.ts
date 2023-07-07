@@ -145,7 +145,7 @@ export class OfferService {
         where: [{ id: body.offerId }],
       });
       if (acceptedOffer) {
-        if (new Date().getTime() + '' == acceptedOffer.expiryTime + '')
+        if (BigInt(new Date().getTime()) > BigInt(acceptedOffer.expiryTime+"") )
           throw new Error('The offer has been expired');
         const { rideId, amount, driverId } = acceptedOffer;
 
@@ -172,6 +172,8 @@ export class OfferService {
         let driverUpdatedRes = await this.driverRepository.update(driverId, {
           onRide: rideId,
         });
+        await this.offerRepository.update(body.offerId,
+          {isCancel:1});
 
         if (driverUpdatedRes.affected < 1)
           throw new Error('The driver is not updated successfully');

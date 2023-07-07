@@ -406,4 +406,97 @@ export class DriverService {
       };
     }
   }
+
+  async distance(driverId:number,role:string):Promise<responseInterface>{
+    let statusCode=STATUS_SUCCESS,data=[],message=[];
+    try{
+        let isAllowed = verifyRoleAccess({
+          role: role,
+          allowedRoles: [roleEnums.driver],
+        });
+        if (isAllowed !== true) {
+          statusCode = isAllowed.statusCode;
+          message = isAllowed.message;
+          return;
+        }
+
+        let driver=await this.driverRepository.findOne({where:{id:driverId}});
+        if(!driver.onRide){
+          statusCode=STATUS_FAILED;
+          message.push("No ride has been assigned to you");
+          return;
+        }
+
+        let ride=await this.driverRepository.query(`Select * from ride where id=${driver.onRide}`);
+  
+
+        let pickupDistance=await this.driverRepository.query(`SELECT ROUND(ST_Distance(
+          Point(${driver.currentCoordinates}),
+          Point(${ride[0].startLocation})
+      )* 100,0) AS distance`);
+       
+      let destinationDistance=await this.driverRepository.query(`SELECT ROUND(ST_Distance(
+        Point(${driver.currentCoordinates}),
+        Point(${ride[0].endLocation})
+    )* 100,0) AS distance`);
+
+
+      data=[{pickupDistance:(ride[0].isStart)?null:pickupDistance[0].distance,destinationDistance:destinationDistance[0].distance,destinationRadius:parseInt(process.env.DESTINATION_RADIUS),pickupRadius:parseInt(process.env.PICKUP_RADIUS),units:"meter"}];
+      message.push("The distance from driver is fetched successfully");
+      statusCode=STATUS_SUCCESS;
+      return;
+    }
+    catch(error)
+    {
+      statusCode=STATUS_FAILED;
+      message.push("The distance of driver is not fetched successfully");
+      message.push(error.message);
+
+    }   
+    finally{
+     return{
+      statusCode,
+      message,
+      data
+     }
+    }
+  }
+  async getLocation(driverId:number,role:string):Promise<responseInterface>{
+    let statusCode=STATUS_FAILED,data=[],message=[];
+    try{
+      let isAllowed = verifyRoleAccess({
+        role: role,
+        allowedRoles: [roleEnums.driver,roleEnums.customer],
+      });
+      if (isAllowed !== true) {
+        statusCode = isAllowed.statusCode;
+        message = isAllowed.message;
+        return;
+      }
+     let driver= await this.driverRepository.findOne({where:{id:driverId}});
+     if(!driver)
+     {
+      message.push("The id of the driver does not exist");
+      statusCode=STATUS_FAILED;
+      return;
+
+     }
+     data=[{currentLocation:driver.currentCoordinates}];
+     message.push("The driver location is fetched successfully");
+     statusCode=STATUS_SUCCESS;
+    }
+    catch(error){
+      message.push("The driver location is not fetched successfully");
+      message.push(error.message);
+      statusCode=STATUS_FAILED;
+    }
+    finally{
+      return{
+        data,
+        statusCode,
+        message
+      }
+
+    }
+  }
 }

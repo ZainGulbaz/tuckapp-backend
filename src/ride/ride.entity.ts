@@ -45,5 +45,8 @@ export class Ride {
   country: string;
 
   @Column({default:0})
-  isCancel:number
+  isCancel:number;
+
+  @Column({default:0})
+  isStart:boolean;
 }

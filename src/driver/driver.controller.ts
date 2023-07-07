@@ -146,4 +146,14 @@ export class DriverController {
       body.role,
     );
   }
+
+  @Get("/distance/ride")
+  async distance(@Body() body:{role:string,authId:number}){
+  return await this.driverService.distance(body.authId,body.role);
+  }
+
+  @Get("/location/:driverId")
+  async getLocation(@Param() params:{driverId:number},@Body() body:{role:string,authId:number}){
+    return await this.driverService.getLocation(params.driverId,body.role);
+  }
 }

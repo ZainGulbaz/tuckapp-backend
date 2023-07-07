@@ -179,6 +179,12 @@ export class RideService {
         throw new Error('Ride is already completed');
       else if (ride.isCancel == 1)
         throw new Error('The ride is canceled already');
+      else if(!ride.isStart)
+      {
+        message.push("The ride is not started by the driver");
+        statusCode=STATUS_FAILED;
+        return;
+      }  
       else {
         rideTransactionId = await this.rideHelperService.createRideTransaction({
           customerId: ride.customerId,
@@ -260,9 +266,16 @@ export class RideService {
       SELECT *
       FROM (
       SELECT GROUP_CONCAT(DISTINCT drs.driverId) AS driverIds,
-      rd.id , 
-      startTime, 
-      endTime, 
+      rd.id, 
+      startTime,
+      ROUND(ST_Distance(
+       Point(SUBSTRING_INDEX(rd.startLocation, ',', 1),SUBSTRING_INDEX(rd.startLocation, ',', -1)),
+       Point(SUBSTRING_INDEX(dr.currentCoordinates, ',', 1),SUBSTRING_INDEX(dr.currentCoordinates, ',', -1)))* 100,0) AS pickupDistance,
+      ROUND(ST_Distance(
+       Point(SUBSTRING_INDEX(rd.endLocation, ',', 1),SUBSTRING_INDEX(rd.endLocation, ',', -1)),
+       Point(SUBSTRING_INDEX(dr.currentCoordinates, ',', 1),SUBSTRING_INDEX(dr.currentCoordinates, ',', -1)))* 100,0) AS destinationDistance, 
+      endTime,
+      dr.currentCoordinates, 
       startLocation,
       pickupAddress, 
       destinationAddress ,
@@ -288,8 +301,9 @@ export class RideService {
       }   
       AND rd.isCancel=0 AND rd.city='${driverCity}' GROUP BY rd.id  
       ) AS abc
-      WHERE FIND_IN_SET(${authId}, abc.driverIds) > 0;`;
+      WHERE FIND_IN_SET(${authId}, abc.driverIds) > 0; `;
 
+      console.log(query);
       let availableRides = await this.rideRepository.query(query);
       if (availableRides.length > 0) {
         statusCode = STATUS_SUCCESS;
@@ -583,7 +597,7 @@ export class RideService {
 
       let isAllowed = verifyRoleAccess({
         role: role,
-        allowedRoles: [roleEnums.driver],
+        allowedRoles: [roleEnums.driver,roleEnums.customer],
       });
       if (isAllowed !== true) {
         statusCode = isAllowed.statusCode;
@@ -604,9 +618,9 @@ export class RideService {
       });
       if (ride) {
         message.push(
-          'The ride is still available and you can make offer for it',
+          role==roleEnums.driver ?'The ride is still available and you can make offer for it':'Your ride is waiting to accept an offer',
         );
-        data = [ride];
+        data = [{...ride,rideCancelTime:process.env.RIDE_CANCEL_TIME}];
         statusCode = STATUS_SUCCESS;
         return;
       }
@@ -624,6 +638,69 @@ export class RideService {
         message,
       };
     }
+  }
+
+  async startRide(rideId:number,role:string,driverId:number):Promise<responseInterface>
+  {
+    let statusCode=STATUS_FAILED,message=[],data=[];
+    try{
+      let isAllowed = verifyRoleAccess({
+        role: role,
+        allowedRoles: [roleEnums.driver],
+      });
+      if (isAllowed !== true) {
+        statusCode = isAllowed.statusCode;
+        message = isAllowed.message;
+        return;
+      }
+      let ride= await this.rideRepository.findOne({where:{id:rideId}});
+      if(ride.driverId!==driverId) {
+        message.push("The ride is not assigned to you");
+        statusCode=STATUS_FAILED;
+        return;
+      }
+      else if(ride.endTime)
+      {
+        message.push("The ride is already completed");
+        statusCode=STATUS_FAILED;
+        return;
+      }
+      else if(ride.isStart)
+      {
+        message.push("The ride is already started");
+        statusCode=STATUS_FAILED;
+        return;
+      }
+      
+
+      if(await checkDriverOnOffer(driverId,this.offerRepository)) {
+        message.push("The driver is already on offer");
+        statusCode=STATUS_FAILED;
+        return;
+      }
+
+      let startRideRes= await this.rideRepository.update(rideId,{isStart:true});
+      if(startRideRes.affected>0)
+      {
+      message.push("The ride has been started successfully");
+      statusCode=STATUS_SUCCESS;
+      return;
+      }
+      else throw new Error("The ride has not been started");
+    }
+    catch(error)
+  {
+     message.push("The ride has not been started");
+     message.push(error.message);
+     statusCode=STATUS_FAILED;
+  }
+  finally{
+    return{
+      statusCode,
+      message,
+      data
+    }
+  }
   }
 
   async getCityFromRide(startCoordinates: string) {
