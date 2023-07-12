@@ -70,8 +70,8 @@ export class PushNotifyService {
       })) GROUP BY dr.id`;
       let drivers = await this.driverRepository.query(query);
       let driversToken = [];
-      let title = 'A new ride is available.';
-      let content = { en: `Come and make an offer` };
+      let title = 'New Ride';
+      let content = { en: `A new Ride is available near you ` };
       drivers?.map((driver: Driver) => {
         if (driver.oneSignalToken) driversToken.push(driver.oneSignalToken);
       });
