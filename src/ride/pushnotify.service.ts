@@ -70,8 +70,8 @@ export class PushNotifyService {
       })) GROUP BY dr.id`;
       let drivers = await this.driverRepository.query(query);
       let driversToken = [];
-      let title = 'A new ride is available';
-      let content = { en: `` };
+      let title = 'A new ride is available.';
+      let content = { en: `Come and make an offer` };
       drivers?.map((driver: Driver) => {
         if (driver.oneSignalToken) driversToken.push(driver.oneSignalToken);
       });
@@ -109,7 +109,7 @@ export class PushNotifyService {
         oneSignalTokens.push(customer.oneSignalToken);
       await this.implementNotification({
         title: 'The ride has been completed',
-        content: {en:" " },
+        content: {en:"Congratulations on completing the ride safely" },
         includedPlayerIds: oneSignalTokens,
       });
       return 'The ride completion notifications are successfully sent to driver and customer';
