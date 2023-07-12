@@ -263,17 +263,13 @@ export class RideService {
          
 
       let query = ` 
-      SELECT *
-      FROM (
-      SELECT GROUP_CONCAT(DISTINCT drs.driverId) AS driverIds,
+      SELECT
       rd.id, 
       startTime,
-      ROUND(ST_Distance(
-       Point(SUBSTRING_INDEX(rd.startLocation, ',', 1),SUBSTRING_INDEX(rd.startLocation, ',', -1)),
-       Point(SUBSTRING_INDEX(dr.currentCoordinates, ',', 1),SUBSTRING_INDEX(dr.currentCoordinates, ',', -1)))* 100,0) AS pickupDistance,
-      ROUND(ST_Distance(
-       Point(SUBSTRING_INDEX(rd.endLocation, ',', 1),SUBSTRING_INDEX(rd.endLocation, ',', -1)),
-       Point(SUBSTRING_INDEX(dr.currentCoordinates, ',', 1),SUBSTRING_INDEX(dr.currentCoordinates, ',', -1)))* 100,0) AS destinationDistance, 
+      ROUND(ST_Distance_Sphere(point(SUBSTRING_INDEX(rd.startLocation, ',', -1),SUBSTRING_INDEX(rd.startLocation, ',', 1)),  point(SUBSTRING_INDEX(dr.currentCoordinates, ',', -1),SUBSTRING_INDEX(dr.currentCoordinates, ',', 1))),0) AS pickupDistance,
+      ROUND(ST_Distance_Sphere(point(SUBSTRING_INDEX(rd.endLocation, ',', -1),SUBSTRING_INDEX(rd.endLocation, ',', 1)),  point(SUBSTRING_INDEX(dr.currentCoordinates, ',', -1),SUBSTRING_INDEX(dr.currentCoordinates, ',', 1))),0) AS destinationDistance , 
+      ${process.env.PICKUP_RADIUS} pickupRadius,
+      ${process.env.DESTINATION_RADIUS} destinationRadius,
       endTime,
       dr.currentCoordinates, 
       startLocation,
@@ -299,10 +295,8 @@ export class RideService {
       AND ((UNIX_TIMESTAMP() *1000)-startTime) < ${
         process.env.RIDE_EXPIRY_TIME
       }   
-      AND rd.isCancel=0 AND rd.city='${driverCity}' GROUP BY rd.id  
-      ) AS abc
-      WHERE FIND_IN_SET(${authId}, abc.driverIds) > 0; `;
-
+      AND dr.id=${authId}
+      AND rd.isCancel=0 AND rd.city='${driverCity}' GROUP BY rd.id`;
 
       let availableRides = await this.rideRepository.query(query);
       if (availableRides.length > 0) {
@@ -606,17 +600,18 @@ export class RideService {
       }
     
       let driver:Driver= await this.driverRepository.findOne({where:{onRide:rideId}});
+      let driverCoordinatesReversed=driver?.currentCoordinates?.split(",")?.reverse();
       const query=`Select 
       *
-      ${(driver)?`,ROUND(ST_Distance(Point(SUBSTRING_INDEX(rd.startLocation, ',', 1),SUBSTRING_INDEX(rd.startLocation, ',', -1)),Point(${driver.currentCoordinates}))* 100,0) AS pickupDistance,ROUND(ST_Distance(Point(SUBSTRING_INDEX(rd.endLocation, ',', 1),SUBSTRING_INDEX(rd.endLocation, ',', -1)),Point(${driver.currentCoordinates}))* 100,0) AS destinationDistance`:""} from ride rd WHERE id=${rideId} AND isCancel=0 AND startTime>${BigInt(new Date().getTime()) - BigInt(parseInt(process.env.RIDE_EXPIRY_TIME))} AND endTime IS NULL`;
+      ${(driver)?`,ROUND(ST_Distance_Sphere(Point(SUBSTRING_INDEX(rd.startLocation, ',', -1),SUBSTRING_INDEX(rd.startLocation, ',', 1)),Point(${driverCoordinatesReversed})),0) AS pickupDistance, ROUND(ST_Distance_Sphere(point(SUBSTRING_INDEX(rd.endLocation, ',', -1),SUBSTRING_INDEX(rd.endLocation, ',', 1)),point(${driverCoordinatesReversed})),0) AS destinationDistance`:""} from ride rd WHERE id=${rideId} AND isCancel=0 AND startTime>${BigInt(new Date().getTime()) - BigInt(parseInt(process.env.RIDE_EXPIRY_TIME))}`;
 
       let ride=await this.rideRepository.query(query);
         
       if (ride[0]) {
         message.push(
-          role==roleEnums.driver ?'The ride is still available and you can make offer for it':'Your ride is waiting to accept an offer',
+          'The ride is fetched successfully'
         );
-        data = [{...ride[0],rideCancelTime:process.env.RIDE_CANCEL_TIME,units:"meters"}];
+        data = [{...ride[0],rideCancelTime:process.env.RIDE_CANCEL_TIME,distanceUnits:process.env.DISTANCE_UNIT, pickupRadius:process.env.PICKUP_RADIUS,destinationRadus:process.env.DESTINATION_RADIUS}];
         statusCode = STATUS_SUCCESS;
         return;
       }
