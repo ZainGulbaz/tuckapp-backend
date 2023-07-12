@@ -262,9 +262,11 @@ export class RideService {
       }
          
 
-      let query = ` 
-      SELECT * FROM 
-      (SELECT
+      let query = `
+      SELECT *,
+      (SELECT CONCAT( '[', GROUP_CONCAT( DISTINCT ( JSON_OBJECT( sr.id, sr.NAME ))), ']' ) FROM service sr JOIN ride_service rds ON sr.id=rds.serviceId where rds.rideId=abc.id GROUP BY rds.rideId) services
+      FROM(
+      SELECT
       rd.id, 
       startTime,
       ROUND(ST_Distance_Sphere(point(SUBSTRING_INDEX(rd.startLocation, ',', -1),SUBSTRING_INDEX(rd.startLocation, ',', 1)),  point(SUBSTRING_INDEX(dr.currentCoordinates, ',', -1),SUBSTRING_INDEX(dr.currentCoordinates, ',', 1))),0) AS pickupDistance,
@@ -278,14 +280,11 @@ export class RideService {
       destinationAddress ,
       endLocation,
       rd.amount,
-      rd.city,
-      CONCAT('[',GROUP_CONCAT(DISTINCT( JSON_OBJECT(sr.id,sr.name))),']') services,
-      GROUP_CONCAT(DISTINCT(drs.driverId)) serviceDriverIds
+      rd.city
       FROM ride rd
       JOIN driver dr ON rd.city=dr.city
       JOIN ride_service rds ON rd.id = rds.rideId
-      LEFT JOIN driver_service drs ON rds.serviceId = drs.serviceId
-      LEFT JOIN service sr ON sr.id = rds.serviceId
+      JOIN driver_service drs ON rds.serviceId = drs.serviceId
       WHERE 
       ISNULL(rd.driverId) 
       AND ST_Distance_Sphere(ST_PointFromText('POINT(${currentCoordinates.replace(
@@ -298,8 +297,10 @@ export class RideService {
         process.env.RIDE_EXPIRY_TIME
       }   
       AND dr.id=${authId}
-      AND rd.isCancel=0 AND rd.city='${driverCity}' GROUP BY rd.id) AS abc WHERE ${authId} IN (abc.serviceDriverIds)`;
-      
+      AND rd.isCancel=0 AND rd.city='${driverCity}' 
+      AND rds.serviceId IN (SELECT serviceId from driver_service where driverId=${authId})
+      GROUP BY rd.id) as abc `;
+
       let availableRides = await this.rideRepository.query(query);
       if (availableRides.length > 0) {
         statusCode = STATUS_SUCCESS;
