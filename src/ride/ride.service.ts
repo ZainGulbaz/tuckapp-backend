@@ -587,7 +587,8 @@ export class RideService {
 
     let statusCode = STATUS_SUCCESS,
     data = [],
-    message = [];
+    message = [],
+    commonServices=[];
     
 
     try {
@@ -603,10 +604,17 @@ export class RideService {
       }
     
       let driver:Driver= await this.driverRepository.findOne({where:{onRide:rideId}});
+      if(driver)
+      {
+       commonServices=await this.rideRepository.query(`Select sr.id,sr.name,sr.type from driver_service drs JOIN ride_service rds ON rds.serviceId=drs.serviceId JOIN service sr ON sr.id=rds.serviceId WHERE drs.driverId=${driver.id} AND rds.rideId=${rideId} `); 
+
+      }
+
+ 
       let driverCoordinatesReversed=driver?.currentCoordinates?.split(",")?.reverse();
       const query=`Select 
       *
-      ${(driver)?`,ROUND(ST_Distance_Sphere(Point(SUBSTRING_INDEX(rd.startLocation, ',', -1),SUBSTRING_INDEX(rd.startLocation, ',', 1)),Point(${driverCoordinatesReversed})),0) AS pickupDistance, ROUND(ST_Distance_Sphere(point(SUBSTRING_INDEX(rd.endLocation, ',', -1),SUBSTRING_INDEX(rd.endLocation, ',', 1)),point(${driverCoordinatesReversed})),0) AS destinationDistance`:""} from ride rd WHERE id=${rideId} AND isCancel=0 AND startTime>${BigInt(new Date().getTime()) - BigInt(parseInt(process.env.RIDE_EXPIRY_TIME))}`;
+      ${(driver)?`,ROUND(ST_Distance_Sphere(Point(SUBSTRING_INDEX(rd.startLocation, ',', -1),SUBSTRING_INDEX(rd.startLocation, ',', 1)),Point(${driverCoordinatesReversed})),0) AS pickupDistance, ROUND(ST_Distance_Sphere(point(SUBSTRING_INDEX(rd.endLocation, ',', -1),SUBSTRING_INDEX(rd.endLocation, ',', 1)),point(${driverCoordinatesReversed})),0) AS destinationDistance`:""} from ride rd WHERE id=${rideId} AND isCancel=0 AND startTime>${BigInt(new Date().getTime()) - BigInt(parseInt(process.env.RIDE_EXPIRY_TIME))}`;      
 
       let ride=await this.rideRepository.query(query);
         
@@ -614,7 +622,11 @@ export class RideService {
         message.push(
           'The ride is fetched successfully'
         );
-        data = [{...ride[0],rideCancelTime:process.env.RIDE_CANCEL_TIME,distanceUnits:process.env.DISTANCE_UNIT, pickupRadius:process.env.PICKUP_RADIUS,destinationRadus:process.env.DESTINATION_RADIUS}];
+       
+      
+        if(commonServices?.filter(service=>service.type==='tow').length===0) ride[0].destinationDistance=ride[0]?.pickupDistance;
+
+        data = [{...ride[0],rideCancelTime:process.env.RIDE_CANCEL_TIME,distanceUnits:process.env.DISTANCE_UNIT, pickupRadius:process.env.PICKUP_RADIUS,destinationRadus:process.env.DESTINATION_RADIUS,commonServices}];
         statusCode = STATUS_SUCCESS;
         return;
       }
