@@ -617,7 +617,7 @@ export class RideService {
       let driverCoordinatesReversed=driver?.currentCoordinates?.split(",")?.reverse();
       const query=`Select 
       *
-      ${(driver)?`,ROUND(ST_Distance_Sphere(Point(SUBSTRING_INDEX(rd.startLocation, ',', -1),SUBSTRING_INDEX(rd.startLocation, ',', 1)),Point(${driverCoordinatesReversed})),0) AS pickupDistance, ROUND(ST_Distance_Sphere(point(SUBSTRING_INDEX(rd.endLocation, ',', -1),SUBSTRING_INDEX(rd.endLocation, ',', 1)),point(${driverCoordinatesReversed})),0) AS destinationDistance`:""} from ride rd WHERE id=${rideId} AND isCancel=0 AND createdTime>${BigInt(new Date().getTime()) - BigInt(parseInt(process.env.RIDE_EXPIRY_TIME))}`;      
+      ${(driver)?`,ROUND(ST_Distance_Sphere(Point(SUBSTRING_INDEX(rd.startLocation, ',', -1),SUBSTRING_INDEX(rd.startLocation, ',', 1)),Point(${driverCoordinatesReversed})),0) AS pickupDistance, ROUND(ST_Distance_Sphere(point(SUBSTRING_INDEX(rd.endLocation, ',', -1),SUBSTRING_INDEX(rd.endLocation, ',', 1)),point(${driverCoordinatesReversed})),0) AS destinationDistance`:""} from ride rd WHERE id=${rideId} AND isCancel=0 `;      
 
       let ride=await this.rideRepository.query(query);
         
