@@ -83,7 +83,8 @@ export class RideService {
         ...body,
         customerId,
         city:city?.replace("City","").trim(),
-        country:countryName
+        country:countryName,
+        createdTime:new Date().getTime()
       });
       if (categories) {
         let categoriesBody = await this.refineJoinTableData(
