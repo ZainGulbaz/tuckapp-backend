@@ -19,8 +19,11 @@ export class Ride {
   @Column({ nullable: true })
   driverId: number;
 
-  @Column({ nullable: false, type: 'bigint' })
+  @Column({ nullable: true, type: 'bigint' })
   startTime: number;
+
+  @Column({ nullable: false, type: 'bigint',default:new Date().getTime() })
+  createdTime: number;
 
   @Column({ nullable: true, type: 'bigint' })
   endTime: number;
@@ -33,6 +36,9 @@ export class Ride {
 
   @Column({nullable:true})
   destinationAddress:string;
+
+  @Column({nullable:true,type: 'bigint'})
+  assignTime:number;
 
   @Column({ nullable: false })
   amount: number;

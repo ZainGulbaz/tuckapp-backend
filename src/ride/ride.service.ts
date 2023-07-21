@@ -1,7 +1,7 @@
 import { Injectable, Body, Inject } from '@nestjs/common';
 import { CreateRideDto } from './dtos/create.ride.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, MoreThan, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Ride } from './ride.entity';
 import { Driver } from 'src/driver/driver.entity';
 import { Ride_Service } from './ride-services.entity';
@@ -16,6 +16,7 @@ import {
   STATUS_UNAUTHORIZED,
 } from 'src/utils/codes';
 import {
+  apiClosed,
   getCity,
   parseNull,
   removeKeysFromBody,
@@ -81,7 +82,6 @@ export class RideService {
       let ride = await this.rideRepository.insert({
         ...body,
         customerId,
-        startTime: new Date().getTime(),
         city:city?.replace("City","").trim(),
         country:countryName
       });
@@ -268,6 +268,8 @@ export class RideService {
       FROM(
       SELECT
       rd.id, 
+      createdTime,
+      assignTime,
       startTime,
       ROUND(ST_Distance_Sphere(point(SUBSTRING_INDEX(rd.startLocation, ',', -1),SUBSTRING_INDEX(rd.startLocation, ',', 1)),  point(SUBSTRING_INDEX(dr.currentCoordinates, ',', -1),SUBSTRING_INDEX(dr.currentCoordinates, ',', 1))),0) AS pickupDistance,
       ROUND(ST_Distance_Sphere(point(SUBSTRING_INDEX(rd.endLocation, ',', -1),SUBSTRING_INDEX(rd.endLocation, ',', 1)),  point(SUBSTRING_INDEX(dr.currentCoordinates, ',', -1),SUBSTRING_INDEX(dr.currentCoordinates, ',', 1))),0) AS destinationDistance , 
@@ -293,7 +295,7 @@ export class RideService {
       )})', 4326),ST_PointFromText(CONCAT('POINT(',REPLACE(startLocation,',',' '),')'), 4326)) <= ${parseNull(
         radius,
       )}  
-      AND ((UNIX_TIMESTAMP() *1000)-startTime) < ${
+      AND ((UNIX_TIMESTAMP() *1000)-createdTime) < ${
         process.env.RIDE_EXPIRY_TIME
       }   
       AND dr.id=${authId}
@@ -337,16 +339,17 @@ export class RideService {
     let statusCode = STATUS_SUCCESS,
       message = [],
       data = [];
+      return apiClosed();
     try {
       let isAllowed = verifyRoleAccess({
         role,
         allowedRoles: [roleEnums.driver],
       });
-      if (isAllowed !== true) {
-        statusCode = isAllowed.statusCode;
-        message = isAllowed.message;
-        return;
-      }
+      // if (isAllowed !== true) {
+      //   statusCode = isAllowed.statusCode;
+      //   message = isAllowed.message;
+      //   return;
+      // }
 
       await validateRideForDriver(this.driverRepository, driverId);
       let ride = await this.rideRepository.findOne({ where: { id } });
@@ -412,7 +415,7 @@ export class RideService {
       }
 
       let rides = await this.rideRepository.query(
-        'SELECT r.id,CONCAT(cu.firstName," ",cu.lastName)customerName,CONCAT(dr.firstName,"",dr.lastName)driverName,cu.phoneNumber customerPhoneNumber, dr.phoneNumber driverPhoneNumber, r.city city ,startTime,endTime,tx.amount FROM ride r JOIN driver dr ON r.driverId = dr.id JOIN customer cu ON r.customerId = cu.id join transaction tx ON r.transactionId = tx.id',
+        'SELECT r.id,CONCAT(cu.firstName," ",cu.lastName)customerName,CONCAT(dr.firstName,"",dr.lastName)driverName,cu.phoneNumber customerPhoneNumber, dr.phoneNumber driverPhoneNumber, r.city city ,createdTime,endTime,tx.amount FROM ride r JOIN driver dr ON r.driverId = dr.id JOIN customer cu ON r.customerId = cu.id join transaction tx ON r.transactionId = tx.id',
       );
       data = rides;
       message.push('The rides are fetched successfully');
@@ -495,9 +498,9 @@ export class RideService {
       data = [];
     try {
       let rides = await this.rideRepository.query(
-        `SELECT rd.id id, startLocation, endLocation, rd.customerId, rd.driverId, rd.startTime, rd.endTime, rd.transactionId, rd.city, rd.amount, rd.country,dr.currentCoordinates driverLocation ,rd.pickupAddress, rd.destinationAddress, CONCAT('[',GROUP_CONCAT(DISTINCT(IF(s.id IS NULL,'',JSON_OBJECT('id',s.id,'name',s.name)))),']') services,CONCAT('[',GROUP_CONCAT(DISTINCT(IF(c.id IS NULL,'',JSON_OBJECT('id',c.id,'name',c.name)))),']')  categories FROM ride rd LEFT JOIN ride_service rs ON rd.id=rs.rideId LEFT JOIN service s ON rs.serviceId=s.id LEFT JOIN ride_category rc ON rc.rideId=rd.id LEFT JOIN category c ON rc.categoryId=c.id LEFT JOIN driver dr ON rd.driverId=dr.id WHERE customerId=${customerId} AND endTime IS NULL AND transactionId IS NULL AND startTime >${
+        `SELECT rd.id id, startLocation, endLocation, rd.customerId, rd.driverId, rd.createdTime, rd.endTime, rd.transactionId, rd.city, rd.amount, rd.country,dr.currentCoordinates driverLocation ,rd.pickupAddress, rd.destinationAddress, CONCAT('[',GROUP_CONCAT(DISTINCT(IF(s.id IS NULL,'',JSON_OBJECT('id',s.id,'name',s.name)))),']') services,CONCAT('[',GROUP_CONCAT(DISTINCT(IF(c.id IS NULL,'',JSON_OBJECT('id',c.id,'name',c.name)))),']')  categories FROM ride rd LEFT JOIN ride_service rs ON rd.id=rs.rideId LEFT JOIN service s ON rs.serviceId=s.id LEFT JOIN ride_category rc ON rc.rideId=rd.id LEFT JOIN category c ON rc.categoryId=c.id LEFT JOIN driver dr ON rd.driverId=dr.id WHERE customerId=${customerId} AND endTime IS NULL AND transactionId IS NULL AND createdTime >${
           new Date().getTime() - 24 * 60 * 60 * 1000
-        } AND (driverId IS NOT NULL OR startTime>${
+        } AND (driverId IS NOT NULL OR createdTime>${
           new Date().getTime() - parseInt(process.env.RIDE_EXPIRY_TIME)
         }) AND rd.isCancel=0 GROUP BY rd.id`,
       );
@@ -610,11 +613,10 @@ export class RideService {
 
       }
 
- 
       let driverCoordinatesReversed=driver?.currentCoordinates?.split(",")?.reverse();
       const query=`Select 
       *
-      ${(driver)?`,ROUND(ST_Distance_Sphere(Point(SUBSTRING_INDEX(rd.startLocation, ',', -1),SUBSTRING_INDEX(rd.startLocation, ',', 1)),Point(${driverCoordinatesReversed})),0) AS pickupDistance, ROUND(ST_Distance_Sphere(point(SUBSTRING_INDEX(rd.endLocation, ',', -1),SUBSTRING_INDEX(rd.endLocation, ',', 1)),point(${driverCoordinatesReversed})),0) AS destinationDistance`:""} from ride rd WHERE id=${rideId} AND isCancel=0 AND startTime>${BigInt(new Date().getTime()) - BigInt(parseInt(process.env.RIDE_EXPIRY_TIME))}`;      
+      ${(driver)?`,ROUND(ST_Distance_Sphere(Point(SUBSTRING_INDEX(rd.startLocation, ',', -1),SUBSTRING_INDEX(rd.startLocation, ',', 1)),Point(${driverCoordinatesReversed})),0) AS pickupDistance, ROUND(ST_Distance_Sphere(point(SUBSTRING_INDEX(rd.endLocation, ',', -1),SUBSTRING_INDEX(rd.endLocation, ',', 1)),point(${driverCoordinatesReversed})),0) AS destinationDistance`:""} from ride rd WHERE id=${rideId} AND isCancel=0 AND createdTime>${BigInt(new Date().getTime()) - BigInt(parseInt(process.env.RIDE_EXPIRY_TIME))}`;      
 
       let ride=await this.rideRepository.query(query);
         
@@ -685,7 +687,7 @@ export class RideService {
         return;
       }
 
-      let startRideRes= await this.rideRepository.update(rideId,{isStart:true});
+      let startRideRes= await this.rideRepository.update(rideId,{isStart:true,startTime:new Date().getTime()});
       if(startRideRes.affected>0)
       {
       message.push("The ride has been started successfully");

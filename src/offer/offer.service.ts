@@ -167,6 +167,7 @@ export class OfferService {
         const acceptedRide = await this.rideRepository.update(rideId, {
           amount,
           driverId,
+          assignTime:new Date().getTime()
         });
 
         let driverUpdatedRes = await this.driverRepository.update(driverId, {
@@ -335,7 +336,7 @@ export class OfferService {
     try {
       if (ride == null) throw new Error('The ride id provided is invalid');
       else if (
-        new Date().getTime() - ride.startTime >
+        new Date().getTime() - ride.createdTime >
         parseInt(process.env.RIDE_EXPIRY_TIME)
       )
         throw new Error('The ride has been expired');

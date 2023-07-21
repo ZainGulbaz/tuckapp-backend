@@ -17,7 +17,7 @@ export const rideStub = {
   endLocation: '31.573315076716298, 74.4164946023901',
   customerId: 1,
   driverId: null,
-  startTime: '1679222895521',
+  createdTime: '1679222895521',
   endTime: null,
   id: 4,
   transactionId: null,
