@@ -7,6 +7,7 @@ import { responseInterface } from './utils/interfaces/response';
 import { hashSync, genSaltSync } from 'bcrypt';
 import { roleEnums } from './utils/enums';
 import { generateRandomOtp, verifyRoleAccess } from './utils/commonfunctions';
+import Axios from "axios";
 
 @Injectable()
 export class AppService {
@@ -87,4 +88,31 @@ return{
       };
     }
   }
+
+  async getGoogleRoutes(origin:string, destination:string){
+    try{
+      let url=`https://maps.googleapis.com/maps/api/directions/json?origin=${origin}&destination=${destination}&key=${process.env.GOOGLE_MAP_KEY}`;
+      let config = {
+        method: 'post',
+        maxBodyLength: Infinity,
+        url,
+        headers: { 
+          'X-Android-Package': 'com.example.truck_driver', 
+        }
+      };
+      
+      let response =await Axios.request(config);
+      console.log(url);
+      return response.data;
+
+    }
+    catch(err)
+    {
+      console.log("HEREEEEE");
+      console.log(err);
+
+    }
+  }
+
+
 }
